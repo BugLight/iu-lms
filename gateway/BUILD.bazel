@@ -1,0 +1,53 @@
+load("@io_bazel_rules_docker//python3:image.bzl", "py3_image")
+load("@k8s_deploy//:defaults.bzl", "k8s_deploy")
+load("@com_github_grpc_grpc//bazel:python_rules.bzl", "py_proto_library", "py_grpc_library")
+load("@rules_python//python:defs.bzl", "py_binary", "py_library")
+load("@third_party//:requirements.bzl", "requirement")
+
+py_library(
+    name = "gateway",
+    srcs = [
+        "__init__.py",
+        "app.py",
+        "settings.py",
+        "routers/__init__.py",
+        "routers/courses.py",
+        "routers/tasks.py",
+        "routers/users.py",
+    ],
+    deps = [
+        requirement("fastapi"),
+        requirement("uvicorn"),
+    ],
+)
+
+py_binary(
+    name = "bin",
+    main = "run.py",
+    srcs = [
+        "run.py",
+    ],
+    deps = [
+        ":gateway",
+    ],
+)
+
+py3_image(
+    name = "image",
+    main = "run.py",
+    srcs = [
+        "run.py",
+    ],
+    deps = [
+        ":gateway",
+    ],
+    base = "//:py3_base_image",
+)
+
+k8s_deploy(
+    name = "production",
+    template = ":deployment.yaml",
+    images = {
+        "cr.yandex/crpte7n56g4f5meeem22/iu-lms/gateway": ":image",
+    },
+)

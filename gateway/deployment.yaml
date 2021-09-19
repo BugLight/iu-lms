@@ -1,0 +1,21 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gateway-deployment
+  labels:
+    app: iu-lms
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: iu-lms
+  template:
+    metadata:
+      labels:
+        app: iu-lms
+    spec:
+      containers:
+        - name: gateway
+          image: cr.yandex/crpte7n56g4f5meeem22/iu-lms/gateway
+          ports:
+            - containerPort: 5000

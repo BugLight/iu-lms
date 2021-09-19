@@ -1,0 +1,14 @@
+package(default_visibility = ["//visibility:public"])
+
+load("@io_bazel_rules_docker//container:container.bzl", "container_image")
+
+container_image(
+    name = "py3_base_image",
+    base = "@python3.8_image//image",
+    symlinks = {
+        "/usr/bin/python": "/usr/bin/python3",
+    },
+    ports = [
+        "5000",
+    ],
+)

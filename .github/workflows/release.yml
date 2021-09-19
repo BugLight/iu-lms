@@ -1,0 +1,30 @@
+name: Release
+on:
+  release:
+    types: [published]
+
+jobs:
+  deploy:
+    name: Deploy
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: bazelbuild/setup-bazelisk@v1
+      - uses: azure/setup-kubectl@v1
+      - name: Mount bazel cache
+        uses: actions/cache@v2
+        with:
+          path: "~/.cache/bazel"
+          key: bazel
+      - name: Container registry login
+        env:
+          OAUTH: ${{secrets.OAUTH}}
+          REGISTRY_ID: crpte7n56g4f5meeem22
+        run: echo $OAUTH | docker login --username oauth --password-stdin cr.yandex
+      - name: Load kubectl config
+        env:
+          CA: ${{secrets.CA}}
+          CONFIG: ${{secrets.KUBECONFIG}}
+        run: mkdir -p /home/runner/.kube && echo -e "$CA" > /home/runner/ca.pem && echo -e "$CONFIG" > /home/runner/.kube/config
+      - name: Deploy gateway
+        run: bazel run //gateway:production && bazel run //gateway:production.apply
