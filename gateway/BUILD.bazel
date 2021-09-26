@@ -10,10 +10,15 @@ py_library(
         "__init__.py",
         "app.py",
         "settings.py",
+        "dependencies/__init__.py",
+        "dependencies/page_flags.py",
         "routers/__init__.py",
         "routers/courses.py",
-        "routers/tasks.py",
         "routers/users.py",
+        "schemas/__init__.py",
+        "schemas/course.py",
+        "schemas/page.py",
+        "schemas/user.py"
     ],
     deps = [
         requirement("fastapi"),

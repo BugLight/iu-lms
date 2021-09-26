@@ -27,4 +27,4 @@ jobs:
           CONFIG: ${{secrets.KUBECONFIG}}
         run: mkdir -p /home/runner/.kube && echo -e "$CA" > /home/runner/ca.pem && echo -e "$CONFIG" > /home/runner/.kube/config
       - name: Deploy gateway
-        run: bazel run //gateway:production && bazel run //gateway:production.apply
+        run: bazel run //gateway:production && bazel run //gateway:production.replace
