@@ -3,7 +3,11 @@ from pydantic import BaseSettings
 
 
 class Settings(BaseSettings):
-    pass
+    SESSIONS_HOST: str
+
+    class Config:
+        env_prefix = "GATEWAY_"
+        env_file = ".env"
 
 
 @lru_cache

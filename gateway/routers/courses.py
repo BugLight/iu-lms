@@ -50,14 +50,6 @@ async def create_course(course_create: CourseCreate):
     return course
 
 
-@router.delete("/{id}", status_code=204)
-async def delete_course(id: UUID):
-    for course in courses:
-        if course.id == id:
-            courses.remove(course)
-            return
-
-
 @router.get("/{id}/access", response_model=Page[User])
 async def get_access(id: UUID, page_flags: PageFlags = Depends()):
     return Page(results=[], total_count=0, offset=0)

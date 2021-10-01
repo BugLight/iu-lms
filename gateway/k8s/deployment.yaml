@@ -23,6 +23,9 @@ spec:
       containers:
         - name: gateway
           image: cr.yandex/crpte7n56g4f5meeem22/iu-lms/gateway
+          envFrom:
+            - configMapRef:
+                name: gateway-config
           ports:
             - containerPort: 5000
           readinessProbe:
