@@ -5,29 +5,25 @@ load("@rules_python//python:defs.bzl", "py_binary", "py_library")
 load("@third_party//:requirements.bzl", "requirement")
 
 py_library(
-    name = "gateway",
+    name = "sessions",
     srcs = [
         "__init__.py",
-        "app.py",
+        "db.py",
+        "mail.py",
+        "password.py",
+        "service.py",
         "settings.py",
-        "dependencies/__init__.py",
-        "dependencies/page_flags.py",
-        "dependencies/sessions.py",
-        "routers/__init__.py",
-        "routers/courses.py",
-        "routers/users.py",
-        "schemas/__init__.py",
-        "schemas/course.py",
-        "schemas/page.py",
-        "schemas/user.py"
+        "models/__init__.py",
+        "models/user.py",
     ],
     deps = [
-        requirement("fastapi"),
-        requirement("uvicorn"),
         requirement("grpcio"),
+        requirement("pydantic"),
+        requirement("SQLAlchemy"),
+        requirement("psycopg2-binary"),
         "//sessions/proto:sessions_py_pb2",
         "//sessions/proto:sessions_py_pb2_grpc",
-    ],
+    ]
 )
 
 py_binary(
@@ -37,7 +33,8 @@ py_binary(
         "run.py",
     ],
     deps = [
-        ":gateway",
+        ":sessions",
+        requirement("grpcio-health-checking"),
     ],
 )
 
@@ -48,7 +45,8 @@ py3_image(
         "run.py",
     ],
     deps = [
-        ":gateway",
+        ":sessions",
+        requirement("grpcio-health-checking"),
     ],
     base = "//:py3_base_image",
 )
@@ -56,22 +54,36 @@ py3_image(
 k8s_deploy(
     name = "deployment",
     kind = "deployment",
-    template = "k8s/deployment.yaml",
+    template = "k8s/sessions.deployment.yaml",
     images = {
-        "cr.yandex/crpte7n56g4f5meeem22/iu-lms/gateway": ":image",
+        "cr.yandex/crpte7n56g4f5meeem22/iu-lms/sessions": ":image",
     },
 )
 
 k8s_deploy(
     name = "service",
     kind = "service",
-    template = "k8s/service.yaml",
+    template = "k8s/sessions.service.yaml",
+)
+
+k8s_deploy(
+    name = "db",
+    kind = "statefulset",
+    template = "k8s/db.statefulset.yaml",
+)
+
+k8s_deploy(
+    name = "db_service",
+    kind = "service",
+    template = "k8s/db.service.yaml",
 )
 
 k8s_objects(
     name = "production",
     objects = [
         ":deployment",
-        ":service"
+        ":service",
+        ":db",
+        ":db_service",
     ],
 )

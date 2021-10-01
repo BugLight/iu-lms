@@ -1,0 +1,34 @@
+syntax = "proto2";
+
+package sessions;
+
+message UserCreateRequest {
+  required string name = 2;
+  required string role = 3;
+  required string email = 4;
+  optional string birth_date = 5;
+}
+
+message UserFindByIdRequest {
+  required string id = 1;
+}
+
+message UserFindRequest {
+  optional string name = 1;
+  optional string role = 2;
+  optional uint32 offset = 3;
+  optional uint32 limit = 4;
+}
+
+message UserResponse {
+  required string id = 1;
+  required string name = 2;
+  required string role = 3;
+  required string email = 4;
+  optional string birth_date = 5;
+}
+
+message UserFindResponse {
+  repeated UserResponse results = 1;
+  required uint32 total_count = 2;
+}

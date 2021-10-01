@@ -1,0 +1,14 @@
+syntax = "proto2";
+
+package sessions;
+
+import "sessions/proto/auth.proto";
+import "sessions/proto/user.proto";
+
+service Sessions {
+  rpc Auth(AuthRequest) returns (AuthResponse);
+  rpc CreateUser(UserCreateRequest) returns (UserResponse);
+  rpc FindUsers(UserFindRequest) returns (UserFindResponse);
+  rpc FindUserById(UserFindByIdRequest) returns (UserResponse);
+  rpc Validate(ValidateRequest) returns (ValidateResponse);
+}

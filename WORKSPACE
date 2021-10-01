@@ -93,5 +93,11 @@ k8s_defaults(
     namespace = "iu-lms",
     user = "deployer",
     context = "default",
-    kind = "deployment",
+)
+
+load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_file")
+http_file(
+    name = "grpc_health_check_bin",
+    downloaded_file_path = "grpc_health_probe",
+    urls = ["https://github.com/grpc-ecosystem/grpc-health-probe/releases/download/v0.3.2/grpc_health_probe-linux-amd64"],
 )

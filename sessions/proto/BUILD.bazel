@@ -1,0 +1,30 @@
+package(default_visibility = ["//visibility:public"])
+
+load("@rules_proto//proto:defs.bzl", "proto_library")
+load("@com_github_grpc_grpc//bazel:python_rules.bzl", "py_proto_library", "py_grpc_library")
+
+proto_library(
+    name = "proto",
+    srcs = [
+        "auth.proto",
+        "sessions.proto",
+        "user.proto",
+    ],
+)
+
+py_proto_library(
+    name = "sessions_py_pb2",
+    deps = [
+        ":proto",
+    ],
+)
+
+py_grpc_library(
+    name = "sessions_py_pb2_grpc",
+    srcs = [
+        ":proto",
+    ],
+    deps = [
+        ":sessions_py_pb2",
+    ],
+)

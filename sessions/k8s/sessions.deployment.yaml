@@ -1,0 +1,33 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sessions
+  labels:
+    app.kubernetes.io/name: sessions
+    app.kubernetes.io/component: sessions
+    app.kubernetes.io/managed-by: kubectl
+    project: iu-lms
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: sessions
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: sessions
+        app.kubernetes.io/component: sessions
+        app.kubernetes.io/managed-by: kubectl
+        project: iu-lms
+    spec:
+      containers:
+        - name: sessions
+          image: cr.yandex/crpte7n56g4f5meeem22/iu-lms/sessions
+          envFrom:
+            - configMapRef:
+                name: sessions-config
+          ports:
+            - containerPort: 5000
+          readinessProbe:
+            exec:
+              command: ["/grpc_health_probe", "-adr=:5000"]

@@ -1,0 +1,20 @@
+syntax = "proto2";
+
+package sessions;
+
+message AuthRequest {
+  required string login = 1;
+  required string password = 2;
+}
+
+message AuthResponse {
+  required string token = 1;
+}
+
+message ValidateRequest {
+  required string token = 1;
+}
+
+message ValidateResponse {
+  required bool valid = 1;
+}
