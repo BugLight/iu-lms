@@ -2,7 +2,8 @@ fastapi
 uvicorn[standard]
 requests
 grpcio-health-checking
-pydantic[email]
+pydantic
+email-validator
 psycopg2-binary
 SQLAlchemy
 pyjwt

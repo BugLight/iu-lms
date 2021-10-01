@@ -21,6 +21,7 @@ py_library(
         requirement("pydantic"),
         requirement("SQLAlchemy"),
         requirement("psycopg2-binary"),
+        requirement("email-validator"),
         "//sessions/proto:sessions_py_pb2",
         "//sessions/proto:sessions_py_pb2_grpc",
     ]
