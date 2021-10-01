@@ -10,13 +10,13 @@ from gateway.dependencies.sessions import sessions_stub
 from gateway.dependencies.user import authorized_user_data
 from gateway.schemas.course import Course, CourseCreate
 from gateway.schemas.page import Page
-from gateway.schemas.user import User
+from gateway.schemas.user import User, RoleEnum
 from sessions.proto import sessions_pb2_grpc, user_pb2
 
 router = APIRouter(prefix="/courses", tags=["courses"])
 
 
-@router.get("/{id}", response_model=Course)
+@router.get("/{id}", response_model=Course, dependencies=[Depends(authorized_user_data)])
 async def get_course_by_id(id: UUID, courses: courses_pb2_grpc.CoursesStub = Depends(courses_stub),
                            sessions: sessions_pb2_grpc.SessionsStub = Depends(sessions_stub)):
     try:
@@ -60,10 +60,13 @@ async def create_course(course_create: CourseCreate,
                         sessions: sessions_pb2_grpc.SessionsStub = Depends(sessions_stub),
                         user=Depends(authorized_user_data)):
     try:
+
+        if user["role"] != RoleEnum.admin and user["role"] != RoleEnum.teacher:
+            raise HTTPException(status_code=403)
         course = await courses.CreateCourse(courses_pb2.CourseCreateRequest(name=course_create.name,
                                                                             description=course_create.description,
                                                                             author_id=user["uid"]))
-        author = await sessions.FindUserById(user_pb2.UserFindByIdRequest(id=course.author_id))
+        author = await sessions.FindUserById(user_pb2.UserFindByIdRequest(id=user["uid"]))
         return Course(id=UUID(course.id),
                       name=course.name,
                       description=course.description,
@@ -72,16 +75,42 @@ async def create_course(course_create: CourseCreate,
         raise HTTPException(status_code=500)
 
 
-@router.get("/{id}/access", response_model=Page[User])
-async def get_access(id: UUID, page_flags: PageFlags = Depends()):
-    return Page(results=[], total_count=0, offset=0)
+@router.get("/{id}/access", response_model=Page[User], dependencies=[Depends(authorized_user_data)])
+async def get_access(id: UUID, page_flags: PageFlags = Depends(),
+                     courses: courses_pb2_grpc.CoursesStub = Depends(courses_stub),
+                     sessions: sessions_pb2_grpc.SessionsStub = Depends(sessions_stub)):
+    try:
+        response = await courses.GetCourseAccess(courses_pb2.CourseAccessRequest(course_id=str(id),
+                                                                                 limit=page_flags.limit,
+                                                                                 offset=page_flags.offset))
+        users = []
+        for result in response.results:
+            user = await sessions.FindUserById(user_pb2.UserFindByIdRequest(id=result.user_id))
+            users.append(User.from_protobuf(user))
+        return Page(results=users, total_count=response.total_count, offset=page_flags.offset)
+    except grpc.RpcError:
+        raise HTTPException(status_code=500)
 
 
 @router.put("/{id}/access/{uid}", status_code=204)
-async def allow_access(id: UUID, uid: UUID):
-    pass
+async def allow_access(id: UUID, uid: UUID, courses: courses_pb2_grpc.CoursesStub = Depends(courses_stub),
+                       user=Depends(authorized_user_data)):
+    try:
+        course = await courses.FindCourseById(courses_pb2.CourseFindByIdRequest(id=str(id)))
+        if course.author_id != user["uid"]:
+            raise HTTPException(status_code=403)
+        await courses.ModifyAccess(courses_pb2.AccessRequest(course_id=str(id), user_id=str(uid), access=True))
+    except grpc.RpcError:
+        raise HTTPException(status_code=500)
 
 
 @router.delete("/{id}/access/{uid}", status_code=204)
-async def disallow_access(id: UUID, uid: UUID):
-    pass
+async def disallow_access(id: UUID, uid: UUID, courses: courses_pb2_grpc.CoursesStub = Depends(courses_stub),
+                          user=Depends(authorized_user_data)):
+    try:
+        course = await courses.FindCourseById(courses_pb2.CourseFindByIdRequest(id=str(id)))
+        if course.author_id != user["uid"]:
+            raise HTTPException(status_code=403)
+        await courses.ModifyAccess(courses_pb2.AccessRequest(course_id=str(id), user_id=str(uid), access=False))
+    except grpc.RpcError:
+        raise HTTPException(status_code=500)
