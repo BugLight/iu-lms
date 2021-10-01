@@ -1,7 +1,6 @@
 fastapi
 uvicorn[standard]
 requests
-grpcio
 grpcio-health-checking
 pydantic
 psycopg2-binary

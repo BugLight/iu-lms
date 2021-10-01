@@ -18,7 +18,6 @@ py_library(
         "models/user.py",
     ],
     deps = [
-        requirement("grpcio"),
         requirement("pydantic"),
         requirement("SQLAlchemy"),
         requirement("psycopg2-binary"),

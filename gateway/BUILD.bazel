@@ -12,6 +12,7 @@ py_library(
         "app.py",
         "settings.py",
         "dependencies/__init__.py",
+        "dependencies/courses.py",
         "dependencies/page_flags.py",
         "dependencies/sessions.py",
         "routers/__init__.py",
@@ -30,10 +31,12 @@ py_library(
     deps = [
         requirement("fastapi"),
         requirement("uvicorn"),
-        requirement("grpcio"),
         requirement("python-multipart"),
+        requirement("pyjwt"),
         "//sessions/proto:sessions_py_pb2",
         "//sessions/proto:sessions_py_pb2_grpc",
+        "//courses/proto:courses_py_pb2",
+        "//courses/proto:courses_py_pb2_grpc",
     ],
 )
 
