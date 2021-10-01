@@ -4,7 +4,7 @@ requests
 grpcio-health-checking
 pydantic
 email-validator
-psycopg2-binary
+pg8000
 SQLAlchemy
 pyjwt
 python-multipart

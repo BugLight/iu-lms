@@ -1,8 +1,8 @@
-from pydantic import BaseSettings, PostgresDsn, EmailStr
+from pydantic import BaseSettings, EmailStr, AnyUrl
 
 
 class SessionsSettings(BaseSettings):
-    POSTGRES_URI: PostgresDsn
+    POSTGRES_URI: AnyUrl
 
     PASSWORD_SALT: str = ""
     PASSWORD_DEFAULT_LENGTH: int = 8

@@ -34,6 +34,7 @@ py_library(
         requirement("uvicorn"),
         requirement("python-multipart"),
         requirement("pyjwt"),
+        requirement("email-validator"),
         "//sessions/proto:sessions_py_pb2",
         "//sessions/proto:sessions_py_pb2_grpc",
         "//courses/proto:courses_py_pb2",
