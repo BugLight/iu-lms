@@ -22,6 +22,7 @@ py_library(
         requirement("SQLAlchemy"),
         requirement("pg8000"),
         requirement("email-validator"),
+        requirement("pyjwt"),
         "//sessions/proto:sessions_py_pb2",
         "//sessions/proto:sessions_py_pb2_grpc",
     ]
