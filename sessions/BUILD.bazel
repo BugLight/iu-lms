@@ -6,6 +6,7 @@ load("@third_party//:requirements.bzl", "requirement")
 
 py_library(
     name = "sessions",
+    srcs_version = "PY3",
     srcs = [
         "__init__.py",
         "db.py",
