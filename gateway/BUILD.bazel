@@ -15,7 +15,7 @@ py_library(
         "dependencies/courses.py",
         "dependencies/page_flags.py",
         "dependencies/sessions.py",
-        "dependencies/user.py",
+        "dependencies/auth.py",
         "routers/__init__.py",
         "routers/courses.py",
         "routers/tasks.py",
