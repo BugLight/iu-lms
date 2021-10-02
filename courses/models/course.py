@@ -1,9 +1,8 @@
 import uuid
 from typing import Optional
 
-from courses.models.access import Access
 from courses.proto import courses_pb2
-from sqlalchemy import Column, String
+from sqlalchemy import Column, String, ForeignKey
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Session
 
@@ -25,6 +24,17 @@ class Course(Base):
                                           description=self.description)
 
 
+class Access(Base):
+    __tablename__ = "accesses"
+
+    user_id = Column(UUID(as_uuid=True), primary_key=True)
+    course_id = Column(UUID(as_uuid=True), ForeignKey(Course.id), primary_key=True)
+
+    def to_protobuf(self) -> courses_pb2.AccessResponse:
+        return courses_pb2.AccessResponse(user_id=str(self.user_id),
+                                          course_id=str(self.course_id))
+
+
 class CourseRepository:
     def __init__(self, session: Session):
         self._session = session
@@ -44,3 +54,7 @@ class CourseRepository:
         if name:
             query = query.filter(Course.name.lower().startswith(name.lower()))
         return query.offset(offset).limit(limit).all, query.order_by(None).count()
+
+    def get_access(self, course_id: uuid.UUID, limit: int = 10, offset: int = 0):
+        query = self._session.query(Access).filter_by(course_id=course_id)
+        return query.offset(offset).limit(limit).all(), query.order_by(None).count()

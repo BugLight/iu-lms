@@ -20,7 +20,7 @@ if __name__ == "__main__":
     Base.metadata.create_all(bind=engine)
     server = grpc.server(ThreadPoolExecutor())
     sessions_pb2_grpc.add_SessionsServicer_to_server(SessionsService(), server)
-    server.add_insecure_port("localhost:{}".format(args.port))
+    server.add_insecure_port("0.0.0.0:{}".format(args.port))
     health_servicer = health.HealthServicer()
     health_servicer.set(sessions_pb2.DESCRIPTOR.services_by_name["Sessions"].full_name,
                         health_pb2.HealthCheckResponse.SERVING)

@@ -67,9 +67,10 @@ class CoursesService(CoursesServicer):
     def GetCourseAccess(self, request: courses_pb2.CourseAccessRequest, context: grpc.ServicerContext):
         try:
             with SessionLocal() as session:
-                repository = AccessRepository(session)
-                accesses, total_count = repository.get_all(course_id=request.course_id,
-                                                           limit=request.limit, offset=request.offset)
+                repository = CourseRepository(session)
+                accesses, total_count = repository.get_access(request.course_id,
+                                                              limit=request.limit,
+                                                              offset=request.offset)
                 return courses_pb2.CourseAccessResponse(results=[access.to_protobuf() for access in accesses],
                                                         total_count=total_count)
         except SQLAlchemyError as e:
