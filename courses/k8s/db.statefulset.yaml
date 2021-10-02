@@ -1,0 +1,41 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: courses-db
+  labels:
+    app.kubernetes.io/name: courses-db
+    app.kubernetes.io/component: courses
+    app.kubernetes.io/managed-by: kubectl
+    project: iu-lms
+spec:
+  serviceName: courses-db
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: courses-db
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: courses-db
+        app.kubernetes.io/component: courses
+        app.kubernetes.io/managed-by: kubectl
+        project: iu-lms
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:latest
+          volumeMounts:
+            - name: courses-db-disk
+              mountPath: /data
+          envFrom:
+            - configMapRef:
+                name: courses-db-config
+  volumeClaimTemplates:
+    - metadata:
+        name: courses-db-disk
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: yc-network-hdd
+        resources:
+          requests:
+            storage: 4Gi

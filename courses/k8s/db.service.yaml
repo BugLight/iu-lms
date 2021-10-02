@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: courses-db
+spec:
+  selector:
+    app.kubernetes.io/name: courses-db
+  ports:
+    - port: 5432

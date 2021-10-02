@@ -44,6 +44,8 @@ message AccessResponse {
 
 message CourseAccessRequest {
   required string course_id = 1;
+  required uint64 limit = 2;
+  required uint64 offset = 3;
 }
 
 message CourseAccessResponse {

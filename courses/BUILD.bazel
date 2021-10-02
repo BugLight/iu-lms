@@ -1,0 +1,88 @@
+load("@io_bazel_rules_docker//python3:image.bzl", "py3_image")
+load("@io_bazel_rules_k8s//k8s:objects.bzl", "k8s_objects")
+load("@k8s_deploy//:defaults.bzl", "k8s_deploy")
+load("@rules_python//python:defs.bzl", "py_binary", "py_library")
+load("@third_party//:requirements.bzl", "requirement")
+
+py_library(
+    name = "courses",
+    srcs_version = "PY3",
+    srcs = [
+        "__init__.py",
+        "db.py",
+        "service.py",
+        "settings.py",
+        "models/__init__.py",
+        "models/access.py",
+        "models/course.py",
+    ],
+    deps = [
+        requirement("pydantic"),
+        requirement("SQLAlchemy"),
+        requirement("pg8000"),
+        "//courses/proto:courses_py_pb2",
+        "//courses/proto:courses_py_pb2_grpc",
+    ]
+)
+
+py_binary(
+    name = "bin",
+    main = "run.py",
+    srcs = [
+        "run.py",
+    ],
+    deps = [
+        ":courses",
+        requirement("grpcio-health-checking"),
+    ],
+)
+
+py3_image(
+    name = "image",
+    main = "run.py",
+    srcs = [
+        "run.py",
+    ],
+    deps = [
+        ":courses",
+        requirement("grpcio-health-checking"),
+    ],
+    base = "//:py3_base_image",
+)
+
+k8s_deploy(
+    name = "deployment",
+    kind = "deployment",
+    template = "k8s/courses.deployment.yaml",
+    images = {
+        "cr.yandex/crpte7n56g4f5meeem22/iu-lms/courses": ":image",
+    },
+)
+
+k8s_deploy(
+    name = "service",
+    kind = "service",
+    template = "k8s/courses.service.yaml",
+)
+
+k8s_deploy(
+    name = "db",
+    kind = "statefulset",
+    template = "k8s/db.statefulset.yaml",
+)
+
+k8s_deploy(
+    name = "db_service",
+    kind = "service",
+    template = "k8s/db.service.yaml",
+)
+
+k8s_objects(
+    name = "production",
+    objects = [
+        ":deployment",
+        ":service",
+        ":db",
+        ":db_service",
+    ],
+)

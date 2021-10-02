@@ -35,3 +35,5 @@ jobs:
         run: bazel run //gateway:production.apply
       - name: Deploy sessions
         run: bazel run //sessions:production.apply
+      - name: Deploy courses
+        run: bazel run //courses:production.apply
