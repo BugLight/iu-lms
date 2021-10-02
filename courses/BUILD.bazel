@@ -13,7 +13,6 @@ py_library(
         "service.py",
         "settings.py",
         "models/__init__.py",
-        "models/access.py",
         "models/course.py",
     ],
     deps = [
