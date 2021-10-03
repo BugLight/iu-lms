@@ -32,7 +32,7 @@ class SessionsService(SessionsServicer):
                     "name": user.name,
                     "role": user.role,
                     "iat": datetime.utcnow(),
-                    "exp": (datetime.now() + timedelta(seconds=settings.JWT_LIFETIME)).utcnow()
+                    "exp": datetime.utcnow() + timedelta(seconds=settings.JWT_LIFETIME)
                 }, settings.JWT_SECRET)
                 return AuthResponse(token=token)
         except SQLAlchemyError as e:
