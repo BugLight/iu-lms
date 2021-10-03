@@ -8,7 +8,7 @@ http_archive(
 load("@rules_python//python:pip.bzl", "pip_install")
 pip_install(
     name = "third_party",
-    requirements = "//thrid_party:requirements.txt",
+    requirements = "//third_party:requirements.txt",
 )
 
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
