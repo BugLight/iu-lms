@@ -34,8 +34,4 @@ class User(UserBase):
 
 
 class UserCreate(UserBase):
-    def to_protobuf(self) -> user_pb2.UserCreateRequest:
-        return user_pb2.UserCreateRequest(name=self.name,
-                                          email=self.email,
-                                          role=self.role,
-                                          birth_date=self.birth_date if self.birth_date else None)
+    pass

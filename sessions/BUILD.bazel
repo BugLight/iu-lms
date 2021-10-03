@@ -23,6 +23,7 @@ py_library(
         requirement("pg8000"),
         requirement("email-validator"),
         requirement("pyjwt"),
+        requirement("grpcio-health-checking"),
         "//sessions/proto:sessions_py_pb2",
         "//sessions/proto:sessions_py_pb2_grpc",
     ]
@@ -30,14 +31,16 @@ py_library(
 
 py_binary(
     name = "bin",
+    srcs_version = "PY3",
     main = "run.py",
     srcs = [
         "run.py",
     ],
     deps = [
         ":sessions",
-        requirement("grpcio-health-checking"),
+        requirement("python-dotenv")
     ],
+    data = glob([".env"]),
 )
 
 py3_image(
@@ -48,7 +51,6 @@ py3_image(
     ],
     deps = [
         ":sessions",
-        requirement("grpcio-health-checking"),
     ],
     base = "//:py3_base_image",
 )

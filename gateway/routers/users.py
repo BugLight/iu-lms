@@ -49,7 +49,11 @@ async def create_user(user_create: UserCreate, sessions: SessionsStub = Depends(
     try:
         if creator["role"] != RoleEnum.admin:
             raise HTTPException(status_code=403)
-        user = await sessions.CreateUser(user_create.to_protobuf())
+        user = await sessions.CreateUser(user_pb2.UserCreateRequest(name=user_create.name,
+                                                                    email=user_create.email,
+                                                                    role=user_create.role,
+                                                                    birth_date=(user_create.birth_date.isoformat()
+                                                                                if user_create.birth_date else None)))
         return User.from_protobuf(user)
     except grpc.RpcError as e:
         logging.error(e)

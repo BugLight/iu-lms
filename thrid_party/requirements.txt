@@ -8,3 +8,4 @@ pg8000
 SQLAlchemy
 pyjwt
 python-multipart
+python-dotenv

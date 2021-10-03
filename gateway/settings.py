@@ -8,7 +8,7 @@ class Settings(BaseSettings):
 
     class Config:
         env_prefix = "GATEWAY_"
-        env_file = ".env"
+        env_file = "gateway/.env"
 
 
 @lru_cache

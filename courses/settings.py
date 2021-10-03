@@ -6,7 +6,7 @@ class SessionsSettings(BaseSettings):
 
     class Config:
         env_prefix = "COURSES_"
-        env_file = ".env"
+        env_file = "courses/.env"
 
 
 settings = SessionsSettings()
