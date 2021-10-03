@@ -1,4 +1,5 @@
 import logging
+from typing import Optional
 from uuid import UUID
 
 import grpc
@@ -23,10 +24,10 @@ async def get_course_by_id(id: UUID, courses: courses_pb2_grpc.CoursesStub = Dep
     try:
         course = await courses.FindCourseById(courses_pb2.CourseFindByIdRequest(id=str(id)))
         author = await sessions.FindUserById(user_pb2.UserFindByIdRequest(id=course.author_id))
-        return Course(id=UUID(course.id),
+        return Course(id=course.id,
                       name=course.name,
                       description=course.description if course.description else None,
-                      author=author)
+                      author=User.from_protobuf(author))
     except grpc.RpcError as e:
         if grpc.StatusCode.NOT_FOUND == e.code():
             raise HTTPException(status_code=404, detail="Not found")
@@ -36,21 +37,24 @@ async def get_course_by_id(id: UUID, courses: courses_pb2_grpc.CoursesStub = Dep
 
 
 @router.get("/", response_model=Page[Course])
-async def get_courses(courses: courses_pb2_grpc.CoursesStub = Depends(courses_stub),
+async def get_courses(name: Optional[str] = None, author_id: Optional[str] = None,
+                      courses: courses_pb2_grpc.CoursesStub = Depends(courses_stub),
                       sessions: sessions_pb2_grpc.SessionsStub = Depends(sessions_stub),
                       user=Depends(authorized),
                       page_flags: PageFlags = Depends()):
     try:
-        response = await courses.FindCourses(courses_pb2.CourseFindRequest(user_id=user["uid"],
+        response = await courses.FindCourses(courses_pb2.CourseFindRequest(name=name,
+                                                                           author_id=author_id,
+                                                                           user_id=user["uid"],
                                                                            limit=page_flags.limit,
                                                                            offset=page_flags.offset))
         courses = []
         for result in response.results:
             author = await sessions.FindUserById(user_pb2.UserFindByIdRequest(id=result.author_id))
-            courses.append(Course(id=UUID(result.id),
+            courses.append(Course(id=result.id,
                                   name=result.name,
                                   description=result.description if result.description else None,
-                                  author=author))
+                                  author=User.from_protobuf(author)))
         return Page(results=courses, total_count=response.total_count, offset=page_flags.offset)
     except grpc.RpcError as e:
         logging.error(e)
@@ -70,10 +74,10 @@ async def create_course(course_create: CourseCreate,
                                                                             description=course_create.description,
                                                                             author_id=user["uid"]))
         author = await sessions.FindUserById(user_pb2.UserFindByIdRequest(id=user["uid"]))
-        return Course(id=UUID(course.id),
+        return Course(id=course.id,
                       name=course.name,
                       description=course.description,
-                      author=author)
+                      author=User.from_protobuf(author))
     except grpc.RpcError as e:
         logging.error(e)
         raise HTTPException(status_code=500)

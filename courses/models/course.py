@@ -2,7 +2,7 @@ import uuid
 from typing import Optional
 
 from courses.proto import courses_pb2
-from sqlalchemy import Column, String, ForeignKey
+from sqlalchemy import Column, String, ForeignKey, or_
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Session
 
@@ -31,8 +31,7 @@ class Access(Base):
     course_id = Column(UUID(as_uuid=True), ForeignKey(Course.id), primary_key=True)
 
     def to_protobuf(self) -> courses_pb2.AccessResponse:
-        return courses_pb2.AccessResponse(user_id=str(self.user_id),
-                                          course_id=str(self.course_id))
+        return courses_pb2.AccessResponse(user_id=str(self.user_id))
 
 
 class CourseRepository:
@@ -48,13 +47,24 @@ class CourseRepository:
                 limit: int = 10, offset: int = 0):
         query = self._session.query(Course)
         if user_id:
-            query = query.join(Access).filter_by(user_id=user_id)
+            query = query.join(Access, isouter=True).filter(or_(Access.user_id == user_id, Course.author_id == user_id))
         if author_id:
             query = query.filter_by(author_id=author_id)
         if name:
             query = query.filter(Course.name.lower().startswith(name.lower()))
-        return query.offset(offset).limit(limit).all, query.order_by(None).count()
+        return query.offset(offset).limit(limit).all(), query.order_by(None).count()
 
     def get_access(self, course_id: uuid.UUID, limit: int = 10, offset: int = 0):
         query = self._session.query(Access).filter_by(course_id=course_id)
         return query.offset(offset).limit(limit).all(), query.order_by(None).count()
+
+    def grant_access(self, course_id: uuid.UUID, user_id: uuid.UUID):
+        access = self._session.query(Access).get({"course_id": course_id, "user_id": user_id})
+        if not access:
+            access = Access(course_id=course_id, user_id=user_id)
+            self._session.add(access)
+
+    def revoke_access(self, course_id: uuid.UUID, user_id: uuid.UUID):
+        access = self._session.query(Access).get({"course_id": course_id, "user_id": user_id})
+        if access:
+            self._session.delete(access)
