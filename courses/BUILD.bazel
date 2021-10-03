@@ -19,6 +19,8 @@ py_library(
         requirement("pydantic"),
         requirement("SQLAlchemy"),
         requirement("pg8000"),
+        requirement("python-dotenv"),
+        requirement("grpcio-health-checking"),
         "//courses/proto:courses_py_pb2",
         "//courses/proto:courses_py_pb2_grpc",
     ]
@@ -32,7 +34,6 @@ py_binary(
         "run.py",
     ],
     deps = [
-        requirement("grpcio-health-checking"),
         ":courses",
     ],
     data = glob([".env"]),
@@ -45,7 +46,6 @@ py3_image(
         "run.py",
     ],
     deps = [
-        requirement("grpcio-health-checking"),
         ":courses",
     ],
     base = "//:py3_base_image",

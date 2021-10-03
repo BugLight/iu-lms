@@ -23,6 +23,7 @@ py_library(
         requirement("pg8000"),
         requirement("email-validator"),
         requirement("pyjwt"),
+        requirement("python-dotenv"),
         requirement("grpcio-health-checking"),
         "//sessions/proto:sessions_py_pb2",
         "//sessions/proto:sessions_py_pb2_grpc",
@@ -38,7 +39,6 @@ py_binary(
     ],
     deps = [
         ":sessions",
-        requirement("python-dotenv")
     ],
     data = glob([".env"]),
 )

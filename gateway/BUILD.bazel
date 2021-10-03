@@ -36,6 +36,7 @@ py_library(
         requirement("python-multipart"),
         requirement("pyjwt"),
         requirement("email-validator"),
+        requirement("python-dotenv"),
         "//sessions/proto:sessions_py_pb2",
         "//sessions/proto:sessions_py_pb2_grpc",
         "//courses/proto:courses_py_pb2",
@@ -54,7 +55,6 @@ py_binary(
     ],
     deps = [
         ":gateway",
-        requirement("python-dotenv")
     ],
     data = glob([".env"]),
 )

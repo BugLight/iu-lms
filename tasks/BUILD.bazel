@@ -25,6 +25,8 @@ py_library(
         requirement("pydantic"),
         requirement("SQLAlchemy"),
         requirement("pg8000"),
+        requirement("grpcio-health-checking"),
+        requirement("python-dotenv"),
         "//tasks/proto:tasks_py_pb2",
         "//tasks/proto:tasks_py_pb2_grpc",
     ]
@@ -38,7 +40,6 @@ py_binary(
         "run.py",
     ],
     deps = [
-        requirement("grpcio-health-checking"),
         ":tasks",
     ],
     data = glob([".env"]),
@@ -51,7 +52,6 @@ py3_image(
         "run.py",
     ],
     deps = [
-        requirement("grpcio-health-checking"),
         ":tasks",
     ],
     base = "//:py3_base_image",
