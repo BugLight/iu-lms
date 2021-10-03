@@ -15,6 +15,7 @@ py_library(
         "dependencies/courses.py",
         "dependencies/page_flags.py",
         "dependencies/sessions.py",
+        "dependencies/tasks.py",
         "dependencies/auth.py",
         "routers/__init__.py",
         "routers/courses.py",
@@ -39,6 +40,8 @@ py_library(
         "//sessions/proto:sessions_py_pb2_grpc",
         "//courses/proto:courses_py_pb2",
         "//courses/proto:courses_py_pb2_grpc",
+        "//tasks/proto:tasks_py_pb2",
+        "//tasks/proto:tasks_py_pb2_grpc",
     ],
 )
 

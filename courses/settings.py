@@ -1,7 +1,7 @@
 from pydantic import BaseSettings, AnyUrl
 
 
-class SessionsSettings(BaseSettings):
+class CoursesSettings(BaseSettings):
     POSTGRES_URI: AnyUrl
 
     class Config:
@@ -9,4 +9,4 @@ class SessionsSettings(BaseSettings):
         env_file = "courses/.env"
 
 
-settings = SessionsSettings()
+settings = CoursesSettings()

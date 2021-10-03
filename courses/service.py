@@ -17,6 +17,7 @@ class CoursesService(CoursesServicer):
                                 description=request.description if request.description else None,
                                 author_id=request.author_id)
                 session.add(course)
+                session.flush()
                 return course.to_protobuf()
         except SQLAlchemyError as e:
             logging.error(e)

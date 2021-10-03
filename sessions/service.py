@@ -41,7 +41,7 @@ class SessionsService(SessionsServicer):
 
     def CreateUser(self, request: UserCreateRequest, context: grpc.ServicerContext):
         try:
-            with SessionLocal() as session:
+            with SessionLocal.begin() as session:
                 repository = UserRepository(session)
                 if repository.find_by_email(request.email):
                     context.abort(grpc.StatusCode.ALREADY_EXISTS, "Email is already in use")
@@ -55,7 +55,7 @@ class SessionsService(SessionsServicer):
                             birth_date=request.birth_date if request.birth_date else None,
                             password=hash_password(password))
                 session.add(user)
-                session.commit()
+                session.flush()
                 return user.to_protobuf()
         except SMTPException as e:
             logging.error(e)

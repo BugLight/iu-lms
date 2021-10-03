@@ -1,0 +1,34 @@
+syntax = "proto2";
+
+package tasks;
+
+message TaskResponse {
+  required string id = 1;
+  required string name = 2;
+  optional string description = 3;
+  required string author_id = 4;
+  required string course_id = 5;
+}
+
+message TaskCreateRequest {
+  required string name = 1;
+  optional string description = 2;
+  required string author_id = 3;
+  required string course_id = 4;
+}
+
+message TaskFindByIdRequest {
+  required string id = 1;
+}
+
+message TaskFindRequest {
+  required uint64 limit = 1;
+  required uint64 offset = 2;
+  optional string user_id = 3;
+  optional string course_id = 4;
+}
+
+message TaskFindResponse {
+  repeated TaskResponse results = 1;
+  required uint64 total_count = 2;
+}

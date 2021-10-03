@@ -5,6 +5,7 @@ from pydantic import BaseSettings
 class Settings(BaseSettings):
     SESSIONS_HOST: str
     COURSES_HOST: str
+    TASKS_HOST: str
 
     class Config:
         env_prefix = "GATEWAY_"

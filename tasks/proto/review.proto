@@ -1,0 +1,35 @@
+syntax = "proto2";
+
+package tasks;
+
+message ReviewResponse {
+  required string id = 1;
+  required string author_id = 2;
+  required string task_id = 3;
+  required string assignee_id = 4;
+  required bool approved = 5;
+  optional string comment = 6;
+  optional uint32 score = 7;
+  required uint64 created = 8;
+}
+
+message ReviewCreateRequest {
+  required string author_id = 1;
+  required string task_id = 2;
+  required string assignee_id = 3;
+  required bool approved = 4;
+  optional string comment = 5;
+  optional uint32 score = 6;
+}
+
+message ReviewFindRequest {
+  required string task_id = 1;
+  required string assignee_id = 2;
+  required uint64 limit = 3;
+  required uint64 offset = 4;
+}
+
+message ReviewFindResponse {
+  repeated ReviewResponse results = 1;
+  required uint64 total_count = 2;
+}

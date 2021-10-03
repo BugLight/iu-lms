@@ -1,0 +1,42 @@
+syntax = "proto2";
+
+package tasks;
+
+message AssignmentResponse {
+  required uint64 created = 1;
+  required uint64 updated = 2;
+  required string status = 3;
+  required uint32 score = 4;
+  required string task_id = 5;
+  required string assignee_id = 6;
+}
+
+message AssignmentFindByIdRequest {
+  required string task_id = 1;
+  required string assignee_id = 2;
+}
+
+message AssignmentFindRequest {
+  required uint64 limit = 1;
+  required uint64 offset = 2;
+  required string task_id = 3;
+}
+
+message AssignmentFindResponse {
+  repeated AssignmentResponse results = 1;
+  required uint64 total_count = 2;
+}
+
+message AssignmentCreateRequest {
+  required string task_id = 1;
+  required string assignee_id = 2;
+}
+
+message AssignmentUpdateRequest {
+  required string task_id = 1;
+  required string assignee_id = 2;
+  optional string status = 3;
+  optional uint32 score = 4;
+}
+
+

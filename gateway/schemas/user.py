@@ -5,8 +5,6 @@ from uuid import UUID
 
 from pydantic import BaseModel, EmailStr
 
-import sessions.proto.user_pb2 as user_pb2
-
 
 class RoleEnum(str, Enum):
     admin = "admin"
@@ -23,14 +21,6 @@ class UserBase(BaseModel):
 
 class User(UserBase):
     id: UUID
-
-    @staticmethod
-    def from_protobuf(pb: user_pb2.UserResponse):
-        return User(id=UUID(pb.id),
-                    name=pb.name,
-                    email=pb.email,
-                    role=pb.role,
-                    birth_date=pb.birth_date if pb.birth_date else None)
 
 
 class UserCreate(UserBase):

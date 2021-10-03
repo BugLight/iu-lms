@@ -32,6 +32,7 @@ class Assignment(BaseModel):
     created: datetime
     updated: datetime
     status: AssignmentStatusEnum
+    score: int
     assignee: User
 
 

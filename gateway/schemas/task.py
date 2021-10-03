@@ -1,3 +1,4 @@
+from typing import Optional
 from uuid import UUID
 
 from pydantic import BaseModel
@@ -13,8 +14,8 @@ class TaskBase(BaseModel):
 
 class Task(TaskBase):
     id: UUID
-    author: User
-    course: Course
+    author: Optional[User]
+    course: Optional[Course]
 
 
 class TaskCreate(TaskBase):

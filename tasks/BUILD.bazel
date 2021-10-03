@@ -5,7 +5,7 @@ load("@rules_python//python:defs.bzl", "py_binary", "py_library")
 load("@third_party//:requirements.bzl", "requirement")
 
 py_library(
-    name = "courses",
+    name = "tasks",
     srcs_version = "PY3",
     srcs = [
         "__init__.py",
@@ -13,14 +13,20 @@ py_library(
         "service.py",
         "settings.py",
         "models/__init__.py",
-        "models/course.py",
+        "models/assignment.py",
+        "models/attempt.py",
+        "models/review.py",
+        "models/task.py",
+        "repository/__init__.py",
+        "repository/assignment.py",
+        "repository/task.py",
     ],
     deps = [
         requirement("pydantic"),
         requirement("SQLAlchemy"),
         requirement("pg8000"),
-        "//courses/proto:courses_py_pb2",
-        "//courses/proto:courses_py_pb2_grpc",
+        "//tasks/proto:tasks_py_pb2",
+        "//tasks/proto:tasks_py_pb2_grpc",
     ]
 )
 
@@ -33,7 +39,7 @@ py_binary(
     ],
     deps = [
         requirement("grpcio-health-checking"),
-        ":courses",
+        ":tasks",
     ],
     data = glob([".env"]),
 )
@@ -46,7 +52,7 @@ py3_image(
     ],
     deps = [
         requirement("grpcio-health-checking"),
-        ":courses",
+        ":tasks",
     ],
     base = "//:py3_base_image",
 )
@@ -54,16 +60,16 @@ py3_image(
 k8s_deploy(
     name = "deployment",
     kind = "deployment",
-    template = "k8s/courses.deployment.yaml",
+    template = "k8s/tasks.deployment.yaml",
     images = {
-        "cr.yandex/crpte7n56g4f5meeem22/iu-lms/courses": ":image",
+        "cr.yandex/crpte7n56g4f5meeem22/iu-lms/tasks": ":image",
     },
 )
 
 k8s_deploy(
     name = "service",
     kind = "service",
-    template = "k8s/courses.service.yaml",
+    template = "k8s/tasks.service.yaml",
 )
 
 k8s_deploy(

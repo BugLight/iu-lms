@@ -1,0 +1,25 @@
+syntax = "proto2";
+
+package tasks;
+
+import "tasks/proto/assignment.proto";
+import "tasks/proto/attempt.proto";
+import "tasks/proto/review.proto";
+import "tasks/proto/task.proto";
+
+service Tasks {
+  rpc CreateTask(TaskCreateRequest) returns (TaskResponse);
+  rpc FindTaskById(TaskFindByIdRequest) returns (TaskResponse);
+  rpc FindTasks(TaskFindRequest) returns (TaskFindResponse);
+
+  rpc CreateAssignment(AssignmentCreateRequest) returns (AssignmentResponse);
+  rpc UpdateAssignment(AssignmentUpdateRequest) returns (AssignmentResponse);
+  rpc FindAssignmentById(AssignmentFindByIdRequest) returns (AssignmentResponse);
+  rpc FindAssignments(AssignmentFindRequest) returns (AssignmentFindResponse);
+
+  rpc CreateReview(ReviewCreateRequest) returns (ReviewResponse);
+  rpc FindReviews(ReviewFindRequest) returns (ReviewFindResponse);
+
+  rpc CreateAttempt(AttemptCreateRequest) returns (AttemptResponse);
+  rpc FindAttempts(AttemptFindRequest) returns (AttemptFindResponse);
+}

@@ -5,17 +5,15 @@ import jwt
 from fastapi import HTTPException, Depends
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
-from gateway.dependencies.sessions import sessions_stub
-from sessions.proto import sessions_pb2_grpc, auth_pb2
+from gateway.dependencies.sessions import SessionsContext
 
 bearer = HTTPBearer()
 
 
 async def authorized(credentials: HTTPAuthorizationCredentials = Depends(bearer),
-                     sessions: sessions_pb2_grpc.SessionsStub = Depends(sessions_stub)):
+                     sessions: SessionsContext = Depends()):
     try:
-        validation_result = await sessions.Validate(auth_pb2.ValidateRequest(token=credentials.credentials))
-        if not validation_result.valid:
+        if not await sessions.validate(credentials.credentials):
             raise HTTPException(status_code=401)
         return jwt.decode(credentials.credentials, options={"verify_signature": False})
     except grpc.RpcError as e:

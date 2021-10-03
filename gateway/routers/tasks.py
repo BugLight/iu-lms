@@ -1,90 +1,114 @@
+import logging
 import uuid
 from datetime import datetime
 from typing import Optional
 from uuid import UUID
 
+import grpc
 from fastapi import APIRouter, Depends, UploadFile, File, HTTPException
 
+from gateway.dependencies.auth import authorized
 from gateway.dependencies.page_flags import PageFlags
-from gateway.schemas.assignment import Assignment, AssignmentStatusEnum, AssignmentExtended, HistoryRecord
+from gateway.dependencies.tasks import TasksContext
+from gateway.schemas.assignment import Assignment, AssignmentExtended
 from gateway.schemas.attempt import Attempt
-from gateway.schemas.course import Course
 from gateway.schemas.page import Page
 from gateway.schemas.review import ReviewCreate, Review
 from gateway.schemas.task import Task, TaskCreate
-from gateway.schemas.user import User
+from gateway.schemas.user import RoleEnum
 
 router = APIRouter(prefix="/tasks", tags=["tasks"])
-task_author = User(id=uuid.uuid4(),
-                   name="Task Author",
-                   email="task_author@iulms.ml",
-                   role="teacher")
-task = Task(id=uuid.uuid4(),
-            name="Test task",
-            description="Test task description",
-            course=Course(id=uuid.uuid4(),
-                          name="Test course",
-                          author=User(id=uuid.uuid4(),
-                                      name="Course Author",
-                                      email="course_author@iulms.ml",
-                                      role="teacher")),
-            author=task_author)
-assignment = AssignmentExtended(created=datetime.now(),
-                                updated=datetime.now(),
-                                status=AssignmentStatusEnum.CHANGES_REQUESTED,
-                                task=task,
-                                assignee=User(id=uuid.uuid4(),
-                                              name="Task Assignee",
-                                              email="assignee@iulms.ml",
-                                              role="student"),
-                                history=[
-                                    HistoryRecord(type="REVIEW",
-                                                  time=datetime.now(),
-                                                  record=Review(id=uuid.uuid4(),
-                                                                author=task_author,
-                                                                approved=False,
-                                                                comment="Didn't work",
-                                                                created=datetime.now())),
-                                    HistoryRecord(type="ATTEMPT",
-                                                  time=datetime.now(),
-                                                  record=Attempt(id=uuid.uuid4(),
-                                                                 created=datetime.now(),
-                                                                 filename="file.zip"))
-                                ])
 
 
 @router.get("/", response_model=Page[Task])
-async def get_tasks(course_id: Optional[UUID] = None, page_flags: PageFlags = Depends()):
-    return Page(results=[task], total_count=1, offset=0)
+async def get_tasks(course_id: Optional[UUID] = None,
+                    tasks: TasksContext = Depends(),
+                    user=Depends(authorized),
+                    page_flags: PageFlags = Depends()):
+    try:
+        if user["role"] == RoleEnum.admin:
+            user_id = None
+        else:
+            user_id = user["uid"]
+        return await tasks.find_tasks(user_id=user_id, course_id=course_id,
+                                      limit=page_flags.limit, offset=page_flags.offset)
+    except grpc.RpcError as e:
+        logging.error(e)
+        raise HTTPException(status_code=500)
 
 
-@router.get("/{id}", response_model=Task)
-async def get_task_by_id(id: UUID):
-    if id != task.id:
-        raise HTTPException(status_code=404, detail="Not found")
-    return task
+@router.get("/{id}", response_model=Task, dependencies=[Depends(authorized)])
+async def get_task_by_id(id: UUID, tasks: TasksContext = Depends()):
+    try:
+        task = await tasks.find_task_by_id(id)
+        if not task:
+            raise HTTPException(status_code=404)
+        return task
+    except grpc.RpcError as e:
+        logging.error(e)
+        raise HTTPException(status_code=500)
 
 
 @router.post("/", response_model=Task, status_code=201)
-async def create_task(task_create: TaskCreate):
-    return task
+async def create_task(task_create: TaskCreate,
+                      tasks: TasksContext = Depends(),
+                      user=Depends(authorized)):
+    try:
+        if user["role"] != RoleEnum.admin and user["role"] != RoleEnum.teacher:
+            raise HTTPException(status_code=403)
+        return await tasks.create_task(task_create, user["uid"])
+    except grpc.RpcError as e:
+        logging.error(e)
+        raise HTTPException(status_code=500)
 
 
 @router.get("/{id}/assignments", response_model=Page[Assignment])
-async def get_task_assignments(id: UUID, page_flags: PageFlags = Depends()):
-    return Page(results=[Assignment(**assignment.dict())], total_count=1, offset=0)
+async def get_task_assignments(id: UUID, page_flags: PageFlags = Depends(),
+                               tasks: TasksContext = Depends(),
+                               user=Depends(authorized)):
+    try:
+        task = await tasks.find_task_by_id(id)
+        if not task:
+            raise HTTPException(status_code=404)
+        return await tasks.find_assignments(id, limit=page_flags.limit, offset=page_flags.offset)
+    except grpc.RpcError as e:
+        logging.error(e)
+        raise HTTPException(status_code=500)
 
 
-@router.get("/{id}/assignments/{uid}", response_model=AssignmentExtended)
-async def get_task_assignment_by_uid(id: UUID, uid: UUID):
-    if id == assignment.task.id and uid == assignment.assignee.id:
+@router.get("/{id}/assignments/{uid}", response_model=AssignmentExtended, dependencies=[Depends(authorized)])
+async def get_task_assignment_by_uid(id: UUID, uid: UUID,
+                                     tasks: TasksContext = Depends()):
+    try:
+        task = await tasks.find_task_by_id(id)
+        if not task:
+            raise HTTPException(status_code=404)
+        assignment = await tasks.find_assignment_by_id(id, uid)
+        if not assignment:
+            raise HTTPException(status_code=404)
         return assignment
-    raise HTTPException(status_code=404, detail="Not found")
+    except grpc.RpcError as e:
+        logging.error(e)
+        raise HTTPException(status_code=500)
 
 
 @router.put("/{id}/assignments/{uid}", response_model=Assignment)
-async def assign_task_to_user(id: UUID, uid: UUID):
-    return Assignment(**assignment.dict())
+async def assign_task_to_user(id: UUID, uid: UUID,
+                              tasks: TasksContext = Depends(),
+                              user=Depends(authorized)):
+    try:
+        task = await tasks.find_task_by_id(id)
+        if not task:
+            raise HTTPException(status_code=404)
+        if user["role"] != RoleEnum.admin and user["role"] != RoleEnum.teacher:
+            raise HTTPException(status_code=403)
+        assignment = await tasks.find_assignment_by_id(id, uid)
+        if assignment:
+            return assignment
+        return await tasks.create_assignment(id, uid)
+    except grpc.RpcError as e:
+        logging.error(e)
+        raise HTTPException(status_code=500)
 
 
 @router.post("/{id}/assignments/{uid}/attempts", response_model=Attempt, status_code=201)
@@ -93,5 +117,17 @@ async def upload_attempt(id: UUID, uid: UUID, file: UploadFile = File(...)):
 
 
 @router.post("/{id}/assignments/{uid}/reviews", response_model=Review, status_code=201)
-async def create_review(id: UUID, uid: UUID, review_create: ReviewCreate):
-    return Review(id=uuid.uuid4(), created=datetime.now(), author=task_author, **review_create.dict())
+async def create_review(id: UUID, uid: UUID, review_create: ReviewCreate,
+                        tasks: TasksContext = Depends(),
+                        user=Depends(authorized)):
+    try:
+        task = await tasks.find_task_by_id(id)
+        if not task:
+            raise HTTPException(status_code=404)
+        if user["role"] != RoleEnum.admin and user["role"] != RoleEnum.teacher:
+            raise HTTPException(status_code=403)
+        return await tasks.create_review(id, uid, review_create, author_id=user["uid"])
+    except grpc.RpcError as e:
+        logging.error(e)
+        raise HTTPException(status_code=500)
+

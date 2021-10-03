@@ -1,0 +1,28 @@
+syntax = "proto2";
+
+package tasks;
+
+message AttemptResponse {
+  required string id = 1;
+  required string task_id = 2;
+  required string assignee_id = 3;
+  required uint64 created = 4;
+}
+
+message AttemptCreateRequest {
+  required string id = 1;
+  required string task_id = 2;
+  required string assignee_id = 3;
+}
+
+message AttemptFindRequest {
+  required uint64 limit = 1;
+  required uint64 offset = 2;
+  required string task_id = 3;
+  required string assignee_id = 4;
+}
+
+message AttemptFindResponse {
+  repeated AttemptResponse results = 1;
+  required uint64 total_count = 2;
+}

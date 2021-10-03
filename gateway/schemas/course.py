@@ -17,4 +17,4 @@ class CourseCreate(CourseBase):
 
 class Course(CourseBase):
     id: UUID
-    author: User
+    author: Optional[User]
