@@ -1,6 +1,6 @@
 import logging
 
-import grpc
+import grpclib
 import jwt
 from fastapi import HTTPException, Depends
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
@@ -16,7 +16,7 @@ async def authorized(credentials: HTTPAuthorizationCredentials = Depends(bearer)
         if not await sessions.validate(credentials.credentials):
             raise HTTPException(status_code=401)
         return jwt.decode(credentials.credentials, options={"verify_signature": False})
-    except grpc.RpcError as e:
+    except grpclib.GRPCError as e:
         logging.error(e)
         raise HTTPException(status_code=500)
 
