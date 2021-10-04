@@ -2,7 +2,7 @@ import enum
 import uuid
 from typing import Optional
 
-from sqlalchemy import Column, String, Enum, Date, LargeBinary
+from sqlalchemy import Column, String, Enum, Date, LargeBinary, func
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Session
 
@@ -47,7 +47,7 @@ class UserRepository:
     def get_all(self, name: Optional[str] = None, role: Optional[RoleEnum] = None, limit: int = 10, offset: int = 0):
         query = self._session.query(User)
         if name:
-            query = query.filter(User.name.lower().contains(name.lower()))
+            query = query.filter(func.lower(User.name).contains(name.lower()))
         if role:
             query = query.filter_by(role=role)
         return query.offset(offset).limit(limit).all(), query.order_by(None).count()
