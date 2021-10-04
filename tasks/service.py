@@ -9,7 +9,7 @@ from tasks.models.assignment import Assignment, AssignmentStatusEnum
 from tasks.models.attempt import Attempt
 from tasks.models.review import Review
 from tasks.models.task import Task
-from tasks.proto import assignment_pb2, review_pb2, task_pb2
+from tasks.proto import assignment_pb2, attempt_pb2, review_pb2, task_pb2
 from tasks.repository.assignment import AssignmentRepository
 from tasks.repository.task import TaskRepository
 
@@ -173,9 +173,9 @@ class TasksService(TasksBase):
                 repository = AssignmentRepository(session)
                 attempts, total_count = repository.find_attempts(request.task_id, request.assignee_id,
                                                                  limit=request.limit, offset=request.offset)
-                await stream.send_message(review_pb2.ReviewFindResponse(results=[attempt.to_protobuf()
-                                                                                 for attempt in attempts],
-                                                                        total_count=total_count))
+                await stream.send_message(attempt_pb2.AttemptFindResponse(results=[attempt.to_protobuf()
+                                                                                   for attempt in attempts],
+                                                                          total_count=total_count))
         except SQLAlchemyError as e:
             logging.error(e)
             raise grpclib.GRPCError(status=grpclib.Status.ABORTED, message="Could not find attempts")
