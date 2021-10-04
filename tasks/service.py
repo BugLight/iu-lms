@@ -116,6 +116,7 @@ class TasksService(TasksBase):
             with SessionLocal.begin() as session:
                 repository = AssignmentRepository(session)
                 repository.update_assignment(request.task_id, request.assignee_id,
+                                             score=request.score,
                                              status=AssignmentStatusEnum.APPROVED
                                              if request.approved else AssignmentStatusEnum.CHANGES_REQUESTED)
                 review = Review(task_id=request.task_id,
