@@ -1,11 +1,13 @@
+import uuid
 from datetime import datetime
 from typing import Optional
 from uuid import UUID
 
 import grpclib.client
-from fastapi import Depends
+from fastapi import Depends, UploadFile
 
 from gateway.dependencies.courses import CoursesContext
+from gateway.dependencies.s3 import s3_client
 from gateway.dependencies.sessions import SessionsContext
 from gateway.schemas.assignment import Assignment, AssignmentExtended, HistoryRecord, HistoryRecordTypeEnum
 from gateway.schemas.attempt import Attempt
@@ -21,18 +23,22 @@ async def tasks_stub(settings: Settings = Depends(get_settings)) -> tasks_grpc.T
         yield tasks_grpc.TasksStub(channel)
 
 
-def attempt_from_protobuf(pb: attempt_pb2.AttemptResponse) -> Attempt:
-    return Attempt(id=pb.id,
-                   created=datetime.fromtimestamp(pb.created))
-
-
 class TasksContext(object):
     def __init__(self, stub: tasks_grpc.TasksStub = Depends(tasks_stub),
                  sessions: SessionsContext = Depends(),
-                 courses: CoursesContext = Depends()):
+                 courses: CoursesContext = Depends(),
+                 s3=Depends(s3_client)):
         self._stub = stub
         self._sessions = sessions
         self._courses = courses
+        self._s3 = s3
+
+    def attempt_from_protobuf(self, pb: attempt_pb2.AttemptResponse) -> Attempt:
+        response = self._s3.head_object(Bucket="iu-lms", Key=pb.id)
+        return Attempt(id=pb.id,
+                       created=datetime.fromtimestamp(pb.created),
+                       download_url=f"https://iu-lms.storage.yandexcloud.net/{pb.id}",
+                       filename=response["Metadata"]["Filename"] if "Filename" in response["Metadata"] else None)
 
     async def task_from_protobuf(self, pb: task_pb2.TaskResponse) -> Task:
         author = await self._sessions.find_user_by_id(pb.author_id)
@@ -136,7 +142,8 @@ class TasksContext(object):
             assignee_id=str(assignee_id)))
         return await self.assignment_from_protobuf(response)
 
-    async def create_review(self, task_id: UUID, assignee_id: UUID, review_create: ReviewCreate, author_id: UUID) -> Review:
+    async def create_review(self, task_id: UUID, assignee_id: UUID, review_create: ReviewCreate,
+                            author_id: UUID) -> Review:
         request = review_pb2.ReviewCreateRequest(task_id=str(task_id),
                                                  assignee_id=str(assignee_id),
                                                  author_id=str(author_id),
@@ -148,11 +155,17 @@ class TasksContext(object):
         response = await self._stub.CreateReview(request)
         return await self.review_from_protobuf(response)
 
-    async def create_attempt(self, task_id: UUID, assignee_id: UUID, attempt_id: UUID,) -> Attempt:
-        response = await self._stub.CreateAttempt(attempt_pb2.AttemptCreateRequest(id=str(attempt_id),
+    async def create_attempt(self, task_id: UUID, assignee_id: UUID, file: UploadFile) -> Attempt:
+        id = uuid.uuid4()
+        self._s3.put_object(Bucket="iu-lms",
+                            Key=str(id),
+                            Body=file.file,
+                            ACL="public-read",
+                            Metadata={"Filename": file.filename})
+        response = await self._stub.CreateAttempt(attempt_pb2.AttemptCreateRequest(id=str(id),
                                                                                    task_id=str(task_id),
                                                                                    assignee_id=str(assignee_id)))
-        return attempt_from_protobuf(response)
+        return self.attempt_from_protobuf(response)
 
     async def find_reviews(self, task_id: UUID, assignee_id: UUID, limit: int = 10, offset: int = 0) -> Page[Review]:
         response = await self._stub.FindReviews(review_pb2.ReviewFindRequest(task_id=str(task_id),
@@ -168,6 +181,6 @@ class TasksContext(object):
                                                                                 assignee_id=str(assignee_id),
                                                                                 limit=limit,
                                                                                 offset=offset))
-        return Page(results=[attempt_from_protobuf(result) for result in response.results],
+        return Page(results=[self.attempt_from_protobuf(result) for result in response.results],
                     total_count=response.total_count,
                     offset=offset)

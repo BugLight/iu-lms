@@ -10,3 +10,4 @@ pyjwt
 python-multipart
 python-dotenv
 cachetools
+boto3

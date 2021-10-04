@@ -83,7 +83,7 @@ async def allow_access(id: UUID, uid: UUID,
         course = await courses.find_course_by_id(id)
         if not course:
             raise HTTPException(status_code=404, detail="No such course")
-        if course.author.id != current_user["uid"]:
+        if str(course.author.id) != current_user["uid"]:
             raise HTTPException(status_code=403)
         await courses.modify_access(id, uid, True)
     except grpclib.GRPCError as e:
@@ -103,7 +103,7 @@ async def disallow_access(id: UUID, uid: UUID,
         course = await courses.find_course_by_id(id)
         if not course:
             raise HTTPException(status_code=404, detail="No such course")
-        if course.author.id != current_user["uid"]:
+        if str(course.author.id) != current_user["uid"]:
             raise HTTPException(status_code=403)
         await courses.modify_access(id, uid, False)
     except grpclib.GRPCError as e:

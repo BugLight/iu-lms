@@ -9,3 +9,4 @@ class Attempt(BaseModel):
     id: UUID
     created: datetime
     filename: Optional[str]
+    download_url: str

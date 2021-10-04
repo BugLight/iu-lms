@@ -1,9 +1,8 @@
 import logging
-import uuid
-from datetime import datetime
 from typing import Optional
 from uuid import UUID
 
+import botocore.exceptions
 import grpclib
 from fastapi import APIRouter, Depends, UploadFile, File, HTTPException
 
@@ -87,6 +86,9 @@ async def get_task_assignment_by_uid(id: UUID, uid: UUID,
         if not assignment:
             raise HTTPException(status_code=404)
         return assignment
+    except botocore.exceptions.BotoCoreError as e:
+        logging.error(e)
+        raise HTTPException(status_code=500)
     except grpclib.GRPCError as e:
         logging.error(e)
         raise HTTPException(status_code=500)
@@ -112,8 +114,22 @@ async def assign_task_to_user(id: UUID, uid: UUID,
 
 
 @router.post("/{id}/assignments/{uid}/attempts", response_model=Attempt, status_code=201)
-async def upload_attempt(id: UUID, uid: UUID, file: UploadFile = File(...)):
-    return Attempt(id=uuid.uuid4(), created=datetime.now(), filename=file.filename)
+async def upload_attempt(id: UUID, uid: UUID, file: UploadFile = File(...),
+                         user=Depends(authorized),
+                         tasks: TasksContext = Depends()):
+    try:
+        task = await tasks.find_task_by_id(id)
+        if not task:
+            raise HTTPException(status_code=404)
+        if user["uid"] != str(uid):
+            raise HTTPException(status_code=403)
+        return await tasks.create_attempt(id, uid, file)
+    except botocore.exceptions.BotoCoreError as e:
+        logging.error(e)
+        raise HTTPException(status_code=500)
+    except grpclib.GRPCError as e:
+        logging.error(e)
+        raise HTTPException(status_code=500)
 
 
 @router.post("/{id}/assignments/{uid}/reviews", response_model=Review, status_code=201)
@@ -130,4 +146,3 @@ async def create_review(id: UUID, uid: UUID, review_create: ReviewCreate,
     except grpclib.GRPCError as e:
         logging.error(e)
         raise HTTPException(status_code=500)
-
