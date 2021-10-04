@@ -9,3 +9,4 @@ SQLAlchemy
 pyjwt
 python-multipart
 python-dotenv
+cachetools

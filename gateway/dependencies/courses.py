@@ -1,10 +1,13 @@
+from asyncio import Lock
 from typing import Optional
 from uuid import UUID
 
 import grpclib.client
+from cachetools import Cache
 from fastapi import Depends
 
 from courses.proto import courses_grpc, courses_pb2
+from gateway.dependencies.cache import grpc_cache, grpc_cache_lock, aio_cachedmethod
 from gateway.dependencies.sessions import SessionsContext
 from gateway.schemas.course import Course, CourseCreate
 from gateway.schemas.page import Page
@@ -19,8 +22,12 @@ async def courses_stub(settings: Settings = Depends(get_settings)) -> courses_gr
 
 class CoursesContext(object):
     def __init__(self, stub: courses_grpc.CoursesStub = Depends(courses_stub),
+                 cache: Optional[Cache] = Depends(grpc_cache),
+                 lock: Lock = Depends(grpc_cache_lock),
                  sessions: SessionsContext = Depends()):
         self._stub = stub
+        self._cache = cache
+        self._lock = lock
         self._sessions = sessions
 
     async def course_from_protobuf(self, pb: courses_pb2.CourseResponse) -> Course:
@@ -30,6 +37,7 @@ class CoursesContext(object):
                       description=pb.description if pb.description else None,
                       author=author)
 
+    @aio_cachedmethod(lambda self: self._cache, lambda self: self._lock)
     async def find_course_by_id(self, id: UUID) -> Optional[Course]:
         try:
             response = await self._stub.FindCourseById(courses_pb2.CourseFindByIdRequest(id=str(id)))

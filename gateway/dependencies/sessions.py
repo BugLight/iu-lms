@@ -1,9 +1,12 @@
+from asyncio import Lock
 from typing import Optional
 from uuid import UUID
 
 import grpclib.client
+from cachetools import Cache
 from fastapi import Depends
 
+from gateway.dependencies.cache import grpc_cache, aio_cachedmethod, grpc_cache_lock
 from gateway.schemas.page import Page
 from gateway.schemas.user import UserCreate, User, RoleEnum
 from gateway.settings import Settings, get_settings
@@ -24,8 +27,11 @@ def user_from_protobuf(pb: user_pb2.UserResponse) -> User:
 
 
 class SessionsContext(object):
-    def __init__(self, stub: sessions_grpc.SessionsStub = Depends(sessions_stub)):
+    def __init__(self, stub: sessions_grpc.SessionsStub = Depends(sessions_stub),
+                 cache: Cache = Depends(grpc_cache), lock: Lock = Depends(grpc_cache_lock)):
         self._stub = stub
+        self._cache = cache
+        self._lock = lock
 
     async def authorize(self, login: str, password: str) -> dict:
         response = await self._stub.Auth(auth_pb2.AuthRequest(login=login, password=password))
@@ -40,6 +46,7 @@ class SessionsContext(object):
         response = await self._stub.CreateUser(request)
         return user_from_protobuf(response)
 
+    @aio_cachedmethod(lambda self: self._cache, lambda self: self._lock)
     async def find_user_by_id(self, id: UUID) -> Optional[User]:
         try:
             response = await self._stub.FindUserById(user_pb2.UserFindByIdRequest(id=str(id)))

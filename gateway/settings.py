@@ -10,6 +10,10 @@ class Settings(BaseSettings):
     TASKS_HOST: str
     TASKS_PORT: int
 
+    GRPC_CACHE_ENABLED: bool = False
+    GRPC_CACHE_MAX_SIZE: float = 128
+    GRPC_CACHE_TTL: float = 120
+
     class Config:
         env_prefix = "GATEWAY_"
         env_file = "gateway/.env"
