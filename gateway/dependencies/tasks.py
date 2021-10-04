@@ -113,15 +113,16 @@ class TasksContext(object):
 
     async def find_assignments(self, task_id: UUID, limit: int = 10, offset: int = 0) -> Page[Assignment]:
         response = await self._stub.FindAssignments(assignment_pb2.AssignmentFindRequest(task_id=str(task_id),
-                                                                                   limit=limit, offset=offset))
+                                                                                         limit=limit, offset=offset))
         return Page(results=[await self.assignment_from_protobuf(result) for result in response.results],
                     total_count=response.total_count,
                     offset=offset)
 
     async def find_assignment_by_id(self, task_id: UUID, assignee_id: UUID) -> Optional[AssignmentExtended]:
         try:
-            response = await self._stub.FindAssignmentById(assignment_pb2.AssignmentFindByIdRequest(task_id=str(task_id),
-                                                                                                    assignee_id=str(assignee_id)))
+            response = await self._stub.FindAssignmentById(assignment_pb2.AssignmentFindByIdRequest(
+                task_id=str(task_id),
+                assignee_id=str(assignee_id)))
             return await self.assignment_extended_from_protobuf(response)
         except grpclib.GRPCError as e:
             if e.status == grpclib.Status.NOT_FOUND:
@@ -130,14 +131,15 @@ class TasksContext(object):
                 raise
 
     async def create_assignment(self, task_id: UUID, assignee_id: UUID) -> Assignment:
-        response = await self._stub.CreateAssignment(assignment_pb2.AssignmentCreateRequest(task_id=str(task_id),
-                                                                                            assignee_id=str(assignee_id)))
+        response = await self._stub.CreateAssignment(assignment_pb2.AssignmentCreateRequest(
+            task_id=str(task_id),
+            assignee_id=str(assignee_id)))
         return await self.assignment_from_protobuf(response)
 
     async def create_review(self, task_id: UUID, assignee_id: UUID, review_create: ReviewCreate, author_id: UUID) -> Review:
-        request = review_pb2.ReviewCreateRequest(task_id=task_id,
-                                                 assignee_id=assignee_id,
-                                                 author_id=author_id,
+        request = review_pb2.ReviewCreateRequest(task_id=str(task_id),
+                                                 assignee_id=str(assignee_id),
+                                                 author_id=str(author_id),
                                                  approved=review_create.approved)
         if review_create.comment:
             request.comment = review_create.comment
