@@ -80,7 +80,7 @@ class TasksContext(object):
             history.append((HistoryRecord(type=HistoryRecordTypeEnum.ATTEMPT,
                                           time=attempt.created,
                                           record=attempt)))
-        history.sort(key=lambda record: record.time)
+        history.sort(key=lambda record: record.time, reverse=True)
         return AssignmentExtended(history=history,
                                   task=task,
                                   **assignment.dict())

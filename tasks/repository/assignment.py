@@ -32,13 +32,17 @@ class AssignmentRepository:
         return query.offset(offset).limit(limit).all(), query.order_by(None).count()
 
     def find_reviews(self, task_id: UUID, assignee_id: UUID, limit: int = 10, offset: int = 0):
-        query = self._session.query(Review).join(Assignment).filter(and_(Assignment.task_id == task_id,
-                                                                         Assignment.assignee_id == assignee_id))
+        query = self._session.query(Review)\
+            .join(Assignment)\
+            .filter(and_(Assignment.task_id == task_id, Assignment.assignee_id == assignee_id))\
+            .order_by(Review.created.desc())
         return query.offset(offset).limit(limit).all(), query.order_by(None).count()
 
     def find_attempts(self, task_id: UUID, assignee_id: UUID, limit: int = 10, offset: int = 0):
-        query = self._session.query(Attempt).join(Assignment).filter(and_(Assignment.task_id == task_id,
-                                                                          Assignment.assignee_id == assignee_id))
+        query = self._session.query(Attempt)\
+            .join(Assignment)\
+            .filter(and_(Assignment.task_id == task_id, Assignment.assignee_id == assignee_id))\
+            .order_by(Attempt.created.desc())
         return query.offset(offset).limit(limit).all(), query.order_by(None).count()
 
     def update_assignment(self, task_id: UUID, assignee_id: UUID,
