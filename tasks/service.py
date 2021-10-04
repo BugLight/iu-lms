@@ -48,7 +48,7 @@ class TasksService(TasksBase):
             request = await stream.recv_message()
             with SessionLocal() as session:
                 repository = TaskRepository(session)
-                tasks, total_count = repository.find_tasks(user_id=request.user_id, course_id=request.user_id,
+                tasks, total_count = repository.find_tasks(user_id=request.user_id, course_id=request.course_id,
                                                            limit=request.limit, offset=request.offset)
                 await stream.send_message(task_pb2.TaskFindResponse(results=[task.to_protobuf() for task in tasks],
                                                                     total_count=total_count))
