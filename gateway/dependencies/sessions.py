@@ -1,19 +1,18 @@
 from typing import Optional
 from uuid import UUID
 
-import grpc
+import grpclib.client
 from fastapi import Depends
 
 from gateway.schemas.page import Page
 from gateway.schemas.user import UserCreate, User, RoleEnum
-from sessions.proto import sessions_pb2_grpc, auth_pb2, user_pb2
-
 from gateway.settings import Settings, get_settings
+from sessions.proto import sessions_grpc, auth_pb2, user_pb2
 
 
-async def sessions_stub(settings: Settings = Depends(get_settings)) -> sessions_pb2_grpc.SessionsStub:
-    async with grpc.aio.insecure_channel(settings.SESSIONS_HOST) as channel:
-        yield sessions_pb2_grpc.SessionsStub(channel)
+async def sessions_stub(settings: Settings = Depends(get_settings)) -> sessions_grpc.SessionsStub:
+    async with grpclib.client.Channel(settings.SESSIONS_HOST, settings.SESSIONS_PORT) as channel:
+        yield sessions_grpc.SessionsStub(channel)
 
 
 def user_from_protobuf(pb: user_pb2.UserResponse) -> User:
@@ -25,7 +24,7 @@ def user_from_protobuf(pb: user_pb2.UserResponse) -> User:
 
 
 class SessionsContext(object):
-    def __init__(self, stub: sessions_pb2_grpc.SessionsStub = Depends(sessions_stub)):
+    def __init__(self, stub: sessions_grpc.SessionsStub = Depends(sessions_stub)):
         self._stub = stub
 
     async def authorize(self, login: str, password: str) -> dict:
@@ -45,8 +44,8 @@ class SessionsContext(object):
         try:
             response = await self._stub.FindUserById(user_pb2.UserFindByIdRequest(id=str(id)))
             return user_from_protobuf(response)
-        except grpc.RpcError as e:
-            if e.code() == grpc.StatusCode.NOT_FOUND:
+        except grpclib.GRPCError as e:
+            if e.status == grpclib.Status.NOT_FOUND:
                 return None
             else:
                 raise

@@ -1,23 +1,23 @@
 import logging
 
-import grpc
+import grpclib.server
 from sqlalchemy.exc import SQLAlchemyError
+from tasks.proto.tasks_grpc import TasksBase
 
 from tasks.db import SessionLocal
 from tasks.models.assignment import Assignment, AssignmentStatusEnum
 from tasks.models.attempt import Attempt
 from tasks.models.review import Review
 from tasks.models.task import Task
-from tasks.proto import assignment_pb2, attempt_pb2, review_pb2, task_pb2
-from tasks.proto.tasks_pb2_grpc import TasksServicer
-
+from tasks.proto import assignment_pb2, review_pb2, task_pb2
 from tasks.repository.assignment import AssignmentRepository
 from tasks.repository.task import TaskRepository
 
 
-class TasksService(TasksServicer):
-    def CreateTask(self, request: task_pb2.TaskCreateRequest, context: grpc.ServicerContext):
+class TasksService(TasksBase):
+    async def CreateTask(self, stream: grpclib.server.Stream):
         try:
+            request = await stream.recv_message()
             with SessionLocal.begin() as session:
                 task = Task(name=request.name,
                             description=request.description if request.description else None,
@@ -25,87 +25,94 @@ class TasksService(TasksServicer):
                             course_id=request.course_id)
                 session.add(task)
                 session.flush()
-                return task.to_protobuf()
+                await stream.send_message(task.to_protobuf())
         except SQLAlchemyError as e:
             logging.error(e)
-            context.abort(grpc.StatusCode.ABORTED, "Could not create task")
+            raise grpclib.GRPCError(status=grpclib.Status.ABORTED, message="Could not create task")
 
-    def FindTaskById(self, request: task_pb2.TaskFindByIdRequest, context: grpc.ServicerContext):
+    async def FindTaskById(self, stream: grpclib.server.Stream):
         try:
+            request = await stream.recv_message()
             with SessionLocal() as session:
                 repository = TaskRepository(session)
                 task = repository.find_by_id(request.id)
                 if not task:
-                    context.abort(grpc.StatusCode.NOT_FOUND, "No task with such id")
-                return task.to_protobuf()
+                    raise grpclib.GRPCError(status=grpclib.Status.NOT_FOUND, message="No task with such id")
+                await stream.send_message(task.to_protobuf())
         except SQLAlchemyError as e:
             logging.error(e)
-            context.abort(grpc.StatusCode.ABORTED, "Could not find task")
+            raise grpclib.GRPCError(status=grpclib.Status.ABORTED, message="Could not find task")
 
-    def FindTasks(self, request: task_pb2.TaskFindRequest, context: grpc.ServicerContext):
+    async def FindTasks(self, stream: grpclib.server.Stream):
         try:
+            request = await stream.recv_message()
             with SessionLocal() as session:
                 repository = TaskRepository(session)
                 tasks, total_count = repository.find_tasks(user_id=request.user_id, course_id=request.user_id,
                                                            limit=request.limit, offset=request.offset)
-                return task_pb2.TaskFindResponse(results=[task.to_protobuf() for task in tasks],
-                                                 total_count=total_count)
+                await stream.send_message(task_pb2.TaskFindResponse(results=[task.to_protobuf() for task in tasks],
+                                                                    total_count=total_count))
         except SQLAlchemyError as e:
             logging.error(e)
-            context.abort(grpc.StatusCode.ABORTED, "Could not find tasks")
+            raise grpclib.GRPCError(status=grpclib.Status.ABORTED, message="Could not find tasks")
 
-    def CreateAssignment(self, request: assignment_pb2.AssignmentCreateRequest, context: grpc.ServicerContext):
+    async def CreateAssignment(self, stream: grpclib.server.Stream):
         try:
+            request = await stream.recv_message()
             with SessionLocal.begin() as session:
                 assignment = Assignment(task_id=request.task_id, assignee_id=request.assignee_id)
                 session.add(assignment)
                 session.flush()
-                return assignment.to_protobuf()
+                await stream.send_message(assignment.to_protobuf())
         except SQLAlchemyError as e:
             logging.error(e)
-            context.abort(grpc.StatusCode.ABORTED, "Could not create assignment")
+            raise grpclib.GRPCError(status=grpclib.Status.ABORTED, message="Could not create assignment")
 
-    def UpdateAssignment(self, request: assignment_pb2.AssignmentUpdateRequest, context: grpc.ServicerContext):
+    async def UpdateAssignment(self, stream: grpclib.server.Stream):
         try:
+            request = await stream.recv_message()
             with SessionLocal.begin() as session:
                 repository = AssignmentRepository(session)
                 assignment = repository.update_assignment(request.task_id, request.assignee_id,
                                                           status=request.status, score=request.score)
                 session.flush()
-                return assignment.to_protobuf()
+                await stream.send_message(assignment.to_protobuf())
         except AssertionError:
-            context.abort(grpc.StatusCode.FAILED_PRECONDITION, "Unable to perform this update")
+            raise grpclib.GRPCError(status=grpclib.Status.FAILED_PRECONDITION, message="Unable to perform this update")
         except SQLAlchemyError as e:
             logging.error(e)
-            context.abort(grpc.StatusCode.ABORTED, "Could not update assignment")
+            raise grpclib.GRPCError(status=grpclib.Status.ABORTED, message="Could not update assignment")
 
-    def FindAssignmentById(self, request: assignment_pb2.AssignmentFindByIdRequest, context: grpc.ServicerContext):
+    async def FindAssignmentById(self, stream: grpclib.server.Stream):
         try:
+            request = await stream.recv_message()
             with SessionLocal() as session:
                 repository = AssignmentRepository(session)
                 assignment = repository.find_by_id(request.task_id, request.assignee_id)
                 if not assignment:
-                    context.abort(grpc.StatusCode.NOT_FOUND, "No assignment with such id")
-                return assignment.to_protobuf()
+                    raise grpclib.GRPCError(status=grpclib.Status.NOT_FOUND, message="No assignment with such id")
+                await stream.send_message(assignment.to_protobuf())
         except SQLAlchemyError as e:
             logging.error(e)
-            context.abort(grpc.StatusCode.ABORTED, "Could not find assignment")
+            raise grpclib.GRPCError(status=grpclib.Status.ABORTED, message="Could not find assignment")
 
-    def FindAssignments(self, request: assignment_pb2.AssignmentFindRequest, context: grpc.ServicerContext):
+    async def FindAssignments(self, stream: grpclib.server.Stream):
         try:
+            request = await stream.recv_message()
             with SessionLocal() as session:
                 repository = AssignmentRepository(session)
                 assignments, total_count = repository.find_assignments(request.task_id, limit=request.limit,
                                                                        offset=request.offset)
-                return assignment_pb2.AssignmentFindResponse(results=[assignment.to_protobuf()
-                                                                      for assignment in assignments],
-                                                             total_count=total_count)
+                await stream.send_message(assignment_pb2.AssignmentFindResponse(results=[assignment.to_protobuf()
+                                                                                         for assignment in assignments],
+                                                                                total_count=total_count))
         except SQLAlchemyError as e:
             logging.error(e)
-            context.abort(grpc.StatusCode.ABORTED, "Could not find assignments")
+            raise grpclib.GRPCError(status=grpclib.Status.ABORTED, message="Could not find assignments")
 
-    def CreateReview(self, request: review_pb2.ReviewCreateRequest, context: grpc.ServicerContext):
+    async def CreateReview(self, stream: grpclib.server.Stream):
         try:
+            request = await stream.recv_message()
             with SessionLocal.begin() as session:
                 repository = AssignmentRepository(session)
                 repository.update_assignment(request.task_id, request.assignee_id,
@@ -119,27 +126,30 @@ class TasksService(TasksServicer):
                                 score=request.score if request.score else None)
                 session.add(review)
                 session.flush()
-                return review.to_protobuf()
+                await stream.send_message(review.to_protobuf())
         except AssertionError:
-            context.abort(grpc.StatusCode.FAILED_PRECONDITION, "Unable to perform this update")
+            raise grpclib.GRPCError(status=grpclib.Status.FAILED_PRECONDITION, message="Unable to perform this update")
         except SQLAlchemyError as e:
             logging.error(e)
-            context.abort(grpc.StatusCode.ABORTED, "Could not create review")
+            raise grpclib.GRPCError(status=grpclib.Status.ABORTED, message="Could not create review")
 
-    def FindReviews(self, request: review_pb2.ReviewFindRequest, context: grpc.ServicerContext):
+    async def FindReviews(self, stream: grpclib.server.Stream):
         try:
+            request = await stream.recv_message()
             with SessionLocal() as session:
                 repository = AssignmentRepository(session)
                 reviews, total_count = repository.find_reviews(request.task_id, request.assignee_id,
                                                                limit=request.limit, offset=request.offset)
-                return review_pb2.ReviewFindResponse(results=[review.to_protobuf() for review in reviews],
-                                                     total_count=total_count)
+                await stream.send_message(review_pb2.ReviewFindResponse(results=[review.to_protobuf()
+                                                                                 for review in reviews],
+                                                                        total_count=total_count))
         except SQLAlchemyError as e:
             logging.error(e)
-            context.abort(grpc.StatusCode.ABORTED, "Could not find reviews")
+            raise grpclib.GRPCError(status=grpclib.Status.ABORTED, message="Could not find reviews")
 
-    def CreateAttempt(self, request: attempt_pb2.AttemptCreateRequest, context: grpc.ServicerContext):
+    async def CreateAttempt(self, stream: grpclib.server.Stream):
         try:
+            request = await stream.recv_message()
             with SessionLocal.begin() as session:
                 repository = AssignmentRepository(session)
                 repository.update_assignment(request.task_id, request.assignee_id,
@@ -149,21 +159,23 @@ class TasksService(TasksServicer):
                                   assignee_id=request.assignee_id)
                 session.add(attempt)
                 session.flush()
-                return attempt.to_protobuf()
+                await stream.send_message(attempt.to_protobuf())
         except AssertionError:
-            context.abort(grpc.StatusCode.FAILED_PRECONDITION, "Unable to perform this update")
+            raise grpclib.GRPCError(status=grpclib.Status.FAILED_PRECONDITION, message="Unable to perform this update")
         except SQLAlchemyError as e:
             logging.error(e)
-            context.abort(grpc.StatusCode.ABORTED, "Could not create attempt")
+            raise grpclib.GRPCError(status=grpclib.Status.ABORTED, message="Could not create attempt")
 
-    def FindAttempts(self, request: attempt_pb2.AttemptFindRequest, context: grpc.ServicerContext):
+    async def FindAttempts(self, stream: grpclib.server.Stream):
         try:
+            request = await stream.recv_message()
             with SessionLocal() as session:
                 repository = AssignmentRepository(session)
                 attempts, total_count = repository.find_attempts(request.task_id, request.assignee_id,
                                                                  limit=request.limit, offset=request.offset)
-                return review_pb2.ReviewFindResponse(results=[attempt.to_protobuf() for attempt in attempts],
-                                                     total_count=total_count)
+                await stream.send_message(review_pb2.ReviewFindResponse(results=[attempt.to_protobuf()
+                                                                                 for attempt in attempts],
+                                                                        total_count=total_count))
         except SQLAlchemyError as e:
             logging.error(e)
-            context.abort(grpc.StatusCode.ABORTED, "Could not find attempts")
+            raise grpclib.GRPCError(status=grpclib.Status.ABORTED, message="Could not find attempts")

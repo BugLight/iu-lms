@@ -4,10 +4,10 @@ from datetime import datetime, timedelta
 from email.mime.text import MIMEText
 from smtplib import SMTPException
 
-import grpc
+import grpclib.server
 import jwt
 from sessions.proto.auth_pb2 import AuthResponse, AuthRequest, ValidateRequest, ValidateResponse
-from sessions.proto.sessions_pb2_grpc import SessionsServicer
+from sessions.proto.sessions_grpc import SessionsBase
 from sessions.proto.user_pb2 import UserFindRequest, UserFindByIdRequest, UserCreateRequest, UserResponse, \
     UserFindResponse
 from sqlalchemy.exc import SQLAlchemyError
@@ -19,14 +19,15 @@ from sessions.password import generate_password, hash_password
 from sessions.settings import settings
 
 
-class SessionsService(SessionsServicer):
-    def Auth(self, request: AuthRequest, context: grpc.ServicerContext):
+class SessionsService(SessionsBase):
+    async def Auth(self, stream: grpclib.server.Stream):
         try:
+            request = await stream.recv_message()
             with SessionLocal() as session:
                 repository = UserRepository(session)
                 user = repository.find_by_email(request.login)
                 if not user or hash_password(request.password) != user.password:
-                    context.abort(grpc.StatusCode.UNAUTHENTICATED, "Invalid login or password")
+                    raise grpclib.GRPCError(status=grpclib.Status.UNAUTHENTICATED, message="Invalid login or password")
                 token = jwt.encode({
                     "uid": str(user.id),
                     "name": user.name,
@@ -34,17 +35,18 @@ class SessionsService(SessionsServicer):
                     "iat": datetime.utcnow(),
                     "exp": datetime.utcnow() + timedelta(seconds=settings.JWT_LIFETIME)
                 }, settings.JWT_SECRET)
-                return AuthResponse(token=token)
+                await stream.send_message(AuthResponse(token=token))
         except SQLAlchemyError as e:
             logging.error(e)
-            context.abort(grpc.StatusCode.ABORTED, "Could not authorize user")
+            raise grpclib.GRPCError(status=grpclib.Status.ABORTED, message="Could not authorize user")
 
-    def CreateUser(self, request: UserCreateRequest, context: grpc.ServicerContext):
+    async def CreateUser(self, stream: grpclib.server.Stream):
         try:
+            request = await stream.recv_message()
             with SessionLocal.begin() as session:
                 repository = UserRepository(session)
                 if repository.find_by_email(request.email):
-                    context.abort(grpc.StatusCode.ALREADY_EXISTS, "Email is already in use")
+                    raise grpclib.GRPCError(status=grpclib.Status.ALREADY_EXISTS, message="Email is already in use")
                 password = generate_password()
                 message = MIMEText("Your password is %s" % password)
                 with smtp_client() as client:
@@ -56,39 +58,43 @@ class SessionsService(SessionsServicer):
                             password=hash_password(password))
                 session.add(user)
                 session.flush()
-                return user.to_protobuf()
+                await stream.send_message(user.to_protobuf())
         except SMTPException as e:
             logging.error(e)
-            context.abort(grpc.StatusCode.ABORTED, "Could not send password email")
+            raise grpclib.GRPCError(grpclib.Status.ABORTED, message="Could not send password email")
         except SQLAlchemyError as e:
             logging.error(e)
-            context.abort(grpc.StatusCode.ABORTED, "Could not create user")
+            raise grpclib.GRPCError(grpclib.Status.ABORTED, message="Could not create user")
 
-    def FindUsers(self, request: UserFindRequest, context: grpc.ServicerContext):
+    async def FindUsers(self, stream: grpclib.server.Stream):
         try:
+            request = await stream.recv_message()
             with SessionLocal() as session:
                 repository = UserRepository(session)
                 users, total_count = repository.get_all(name=request.name, role=request.role,
                                                         limit=request.limit, offset=request.offset)
-                return UserFindResponse(results=[user.to_protobuf() for user in users], total_count=total_count)
+                await stream.send_message(UserFindResponse(results=[user.to_protobuf() for user in users],
+                                                           total_count=total_count))
         except SQLAlchemyError:
-            context.abort(grpc.StatusCode.ABORTED, "Could not find users")
+            raise grpclib.GRPCError(status=grpclib.Status.ABORTED, message="Could not find users")
 
-    def FindUserById(self, request: UserFindByIdRequest, context: grpc.ServicerContext):
+    async def FindUserById(self, stream: grpclib.server.Stream):
         try:
+            request = await stream.recv_message()
             with SessionLocal() as session:
                 repository = UserRepository(session)
                 user = repository.find_by_id(request.id)
                 if not user:
-                    context.abort(grpc.StatusCode.NOT_FOUND, "No user with such id")
-                return user.to_protobuf()
+                    raise grpclib.GRPCError(status=grpclib.Status.NOT_FOUND, message="No user with such id")
+                await stream.send_message(user.to_protobuf())
         except SQLAlchemyError as e:
             logging.error(e)
-            context.abort(grpc.StatusCode.ABORTED, "Could not find user")
+            raise grpclib.GRPCError(status=grpclib.Status.ABORTED, message="Could not find user")
 
-    def Validate(self, request: ValidateRequest, context: grpc.ServicerContext):
+    async def Validate(self, stream: grpclib.server.Stream):
         try:
+            request = await stream.recv_message()
             jwt.decode(request.token, settings.JWT_SECRET, algorithms=["HS256"])
-            return ValidateResponse(valid=True)
+            await stream.send_message(ValidateResponse(valid=True))
         except jwt.InvalidTokenError:
-            return ValidateResponse(valid=False)
+            await stream.send_message(ValidateResponse(valid=False))

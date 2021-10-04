@@ -1,10 +1,10 @@
 from typing import Optional
 from uuid import UUID
 
-import grpc.aio
+import grpclib.client
 from fastapi import Depends
 
-from courses.proto import courses_pb2_grpc, courses_pb2
+from courses.proto import courses_grpc, courses_pb2
 from gateway.dependencies.sessions import SessionsContext
 from gateway.schemas.course import Course, CourseCreate
 from gateway.schemas.page import Page
@@ -12,13 +12,13 @@ from gateway.schemas.user import User
 from gateway.settings import Settings, get_settings
 
 
-async def courses_stub(settings: Settings = Depends(get_settings)) -> courses_pb2_grpc.CoursesStub:
-    async with grpc.aio.insecure_channel(settings.COURSES_HOST) as channel:
-        yield courses_pb2_grpc.CoursesStub(channel)
+async def courses_stub(settings: Settings = Depends(get_settings)) -> courses_grpc.CoursesStub:
+    async with grpclib.client.Channel(settings.COURSES_HOST, settings.COURSES_PORT) as channel:
+        yield courses_grpc.CoursesStub(channel)
 
 
 class CoursesContext(object):
-    def __init__(self, stub: courses_pb2_grpc.CoursesStub = Depends(courses_stub),
+    def __init__(self, stub: courses_grpc.CoursesStub = Depends(courses_stub),
                  sessions: SessionsContext = Depends()):
         self._stub = stub
         self._sessions = sessions
@@ -34,8 +34,8 @@ class CoursesContext(object):
         try:
             response = await self._stub.FindCourseById(courses_pb2.CourseFindByIdRequest(id=str(id)))
             return await self.course_from_protobuf(response)
-        except grpc.RpcError as e:
-            if e.code() == grpc.StatusCode.NOT_FOUND:
+        except grpclib.GRPCError as e:
+            if e.status == grpclib.Status.NOT_FOUND:
                 return None
             else:
                 raise

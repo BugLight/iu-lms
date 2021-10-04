@@ -4,7 +4,7 @@ from datetime import datetime
 from typing import Optional
 from uuid import UUID
 
-import grpc
+import grpclib
 from fastapi import APIRouter, Depends, UploadFile, File, HTTPException
 
 from gateway.dependencies.auth import authorized
@@ -32,7 +32,7 @@ async def get_tasks(course_id: Optional[UUID] = None,
             user_id = user["uid"]
         return await tasks.find_tasks(user_id=user_id, course_id=course_id,
                                       limit=page_flags.limit, offset=page_flags.offset)
-    except grpc.RpcError as e:
+    except grpclib.GRPCError as e:
         logging.error(e)
         raise HTTPException(status_code=500)
 
@@ -44,7 +44,7 @@ async def get_task_by_id(id: UUID, tasks: TasksContext = Depends()):
         if not task:
             raise HTTPException(status_code=404)
         return task
-    except grpc.RpcError as e:
+    except grpclib.GRPCError as e:
         logging.error(e)
         raise HTTPException(status_code=500)
 
@@ -57,7 +57,7 @@ async def create_task(task_create: TaskCreate,
         if user["role"] != RoleEnum.admin and user["role"] != RoleEnum.teacher:
             raise HTTPException(status_code=403)
         return await tasks.create_task(task_create, user["uid"])
-    except grpc.RpcError as e:
+    except grpclib.GRPCError as e:
         logging.error(e)
         raise HTTPException(status_code=500)
 
@@ -71,7 +71,7 @@ async def get_task_assignments(id: UUID, page_flags: PageFlags = Depends(),
         if not task:
             raise HTTPException(status_code=404)
         return await tasks.find_assignments(id, limit=page_flags.limit, offset=page_flags.offset)
-    except grpc.RpcError as e:
+    except grpclib.GRPCError as e:
         logging.error(e)
         raise HTTPException(status_code=500)
 
@@ -87,7 +87,7 @@ async def get_task_assignment_by_uid(id: UUID, uid: UUID,
         if not assignment:
             raise HTTPException(status_code=404)
         return assignment
-    except grpc.RpcError as e:
+    except grpclib.GRPCError as e:
         logging.error(e)
         raise HTTPException(status_code=500)
 
@@ -106,7 +106,7 @@ async def assign_task_to_user(id: UUID, uid: UUID,
         if assignment:
             return assignment
         return await tasks.create_assignment(id, uid)
-    except grpc.RpcError as e:
+    except grpclib.GRPCError as e:
         logging.error(e)
         raise HTTPException(status_code=500)
 
@@ -127,7 +127,7 @@ async def create_review(id: UUID, uid: UUID, review_create: ReviewCreate,
         if user["role"] != RoleEnum.admin and user["role"] != RoleEnum.teacher:
             raise HTTPException(status_code=403)
         return await tasks.create_review(id, uid, review_create, author_id=user["uid"])
-    except grpc.RpcError as e:
+    except grpclib.GRPCError as e:
         logging.error(e)
         raise HTTPException(status_code=500)
 

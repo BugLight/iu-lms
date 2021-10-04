@@ -2,7 +2,7 @@ from datetime import datetime
 from typing import Optional
 from uuid import UUID
 
-import grpc.aio
+import grpclib.client
 from fastapi import Depends
 
 from gateway.dependencies.courses import CoursesContext
@@ -13,12 +13,12 @@ from gateway.schemas.page import Page
 from gateway.schemas.review import Review, ReviewCreate
 from gateway.schemas.task import Task, TaskCreate
 from gateway.settings import Settings, get_settings
-from tasks.proto import assignment_pb2, attempt_pb2, review_pb2, tasks_pb2_grpc, task_pb2
+from tasks.proto import assignment_pb2, attempt_pb2, review_pb2, tasks_grpc, task_pb2
 
 
-async def tasks_stub(settings: Settings = Depends(get_settings)) -> tasks_pb2_grpc.TasksStub:
-    async with grpc.aio.insecure_channel(settings.TASKS_HOST) as channel:
-        yield tasks_pb2_grpc.TasksStub(channel)
+async def tasks_stub(settings: Settings = Depends(get_settings)) -> tasks_grpc.TasksStub:
+    async with grpclib.client.Channel(settings.TASKS_HOST, settings.TASKS_PORT) as channel:
+        yield tasks_grpc.TasksStub(channel)
 
 
 def attempt_from_protobuf(pb: attempt_pb2.AttemptResponse) -> Attempt:
@@ -27,7 +27,7 @@ def attempt_from_protobuf(pb: attempt_pb2.AttemptResponse) -> Attempt:
 
 
 class TasksContext(object):
-    def __init__(self, stub: tasks_pb2_grpc.TasksStub = Depends(tasks_stub),
+    def __init__(self, stub: tasks_grpc.TasksStub = Depends(tasks_stub),
                  sessions: SessionsContext = Depends(),
                  courses: CoursesContext = Depends()):
         self._stub = stub
@@ -83,8 +83,8 @@ class TasksContext(object):
         try:
             response = await self._stub.FindTaskById(task_pb2.TaskFindByIdRequest(id=str(id)))
             return await self.task_from_protobuf(response)
-        except grpc.RpcError as e:
-            if e.code() == grpc.StatusCode.NOT_FOUND:
+        except grpclib.GRPCError as e:
+            if e.status == grpclib.Status.NOT_FOUND:
                 return None
             else:
                 raise
@@ -123,10 +123,11 @@ class TasksContext(object):
             response = await self._stub.FindAssignmentById(assignment_pb2.AssignmentFindByIdRequest(task_id=str(task_id),
                                                                                                     assignee_id=str(assignee_id)))
             return await self.assignment_extended_from_protobuf(response)
-        except grpc.RpcError as e:
-            if e.code() == grpc.StatusCode.NOT_FOUND:
+        except grpclib.GRPCError as e:
+            if e.status == grpclib.Status.NOT_FOUND:
                 return None
-            raise
+            else:
+                raise
 
     async def create_assignment(self, task_id: UUID, assignee_id: UUID) -> Assignment:
         response = await self._stub.CreateAssignment(assignment_pb2.AssignmentCreateRequest(task_id=str(task_id),

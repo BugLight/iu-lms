@@ -2,7 +2,7 @@ import logging
 from typing import Optional
 from uuid import UUID
 
-import grpc
+import grpclib
 from fastapi import APIRouter, Depends, HTTPException
 
 from gateway.dependencies.auth import authorized
@@ -23,7 +23,7 @@ async def get_course_by_id(id: UUID, courses: CoursesContext = Depends()):
         if not course:
             raise HTTPException(status_code=404)
         return course
-    except grpc.RpcError as e:
+    except grpclib.GRPCError as e:
         logging.error(e)
         raise HTTPException(status_code=500)
 
@@ -40,7 +40,7 @@ async def get_courses(name: Optional[str] = None, author_id: Optional[str] = Non
             user_id = user["uid"]
         return await courses.find_courses(user_id=user_id, name=name, author_id=author_id, limit=page_flags.limit,
                                           offset=page_flags.offset)
-    except grpc.RpcError as e:
+    except grpclib.GRPCError as e:
         logging.error(e)
         raise HTTPException(status_code=500)
 
@@ -53,7 +53,7 @@ async def create_course(course_create: CourseCreate,
         if user["role"] != RoleEnum.admin and user["role"] != RoleEnum.teacher:
             raise HTTPException(status_code=403)
         return await courses.create_course(course_create, user["uid"])
-    except grpc.RpcError as e:
+    except grpclib.GRPCError as e:
         logging.error(e)
         raise HTTPException(status_code=500)
 
@@ -66,7 +66,7 @@ async def get_access(id: UUID, page_flags: PageFlags = Depends(),
         if not course:
             raise HTTPException(status_code=404)
         return await courses.get_access(id, limit=page_flags.limit, offset=page_flags.offset)
-    except grpc.RpcError as e:
+    except grpclib.GRPCError as e:
         logging.error(e)
         raise HTTPException(status_code=500)
 
@@ -86,7 +86,7 @@ async def allow_access(id: UUID, uid: UUID,
         if course.author.id != current_user["uid"]:
             raise HTTPException(status_code=403)
         await courses.modify_access(id, uid, True)
-    except grpc.RpcError as e:
+    except grpclib.GRPCError as e:
         logging.error(e)
         raise HTTPException(status_code=500)
 
@@ -106,6 +106,6 @@ async def disallow_access(id: UUID, uid: UUID,
         if course.author.id != current_user["uid"]:
             raise HTTPException(status_code=403)
         await courses.modify_access(id, uid, False)
-    except grpc.RpcError as e:
+    except grpclib.GRPCError as e:
         logging.error(e)
         raise HTTPException(status_code=500)

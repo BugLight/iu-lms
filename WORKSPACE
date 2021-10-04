@@ -8,6 +8,7 @@ http_archive(
 load("@rules_python//python:pip.bzl", "pip_install")
 pip_install(
     name = "third_party",
+    python_interpreter = "python3",
     requirements = "//third_party:requirements.txt",
 )
 
@@ -47,31 +48,31 @@ container_pull(
 )
 
 http_archive(
-    name = "rules_proto",
-    sha256 = "66bfdf8782796239d3875d37e7de19b1d94301e8972b3cbd2446b332429b4df1",
-    strip_prefix = "rules_proto-4.0.0",
-    urls = [
-        "https://mirror.bazel.build/github.com/bazelbuild/rules_proto/archive/refs/tags/4.0.0.tar.gz",
-        "https://github.com/bazelbuild/rules_proto/archive/refs/tags/4.0.0.tar.gz",
-    ],
+    name = "rules_proto_grpc",
+   sha256 = "4202a150910712d00d95f11e240ad6da4c92e542d3b9fbb5b3a3d60abba3de77",
+    strip_prefix = "rules_proto_grpc-4.0.0",
+    urls = ["https://github.com/rules-proto-grpc/rules_proto_grpc/archive/4.0.0.tar.gz"],
 )
+
+load("@rules_proto_grpc//:repositories.bzl", "rules_proto_grpc_toolchains", "rules_proto_grpc_repos")
+rules_proto_grpc_toolchains()
+rules_proto_grpc_repos()
 
 load("@rules_proto//proto:repositories.bzl", "rules_proto_dependencies", "rules_proto_toolchains")
 rules_proto_dependencies()
 rules_proto_toolchains()
 
-http_archive(
-    name = "com_github_grpc_grpc",
-    sha256 = "13e7c6460cd979726e5b3b129bb01c34532f115883ac696a75eb7f1d6a9765ed",
-    strip_prefix = "grpc-1.40.0",
-    urls = ["https://github.com/grpc/grpc/archive/refs/tags/v1.40.0.tar.gz"],
-)
+load("@rules_proto_grpc//python:repositories.bzl", rules_proto_grpc_python_repos = "python_repos")
+rules_proto_grpc_python_repos()
 
 load("@com_github_grpc_grpc//bazel:grpc_deps.bzl", "grpc_deps")
 grpc_deps()
 
-load("@com_github_grpc_grpc//bazel:grpc_extra_deps.bzl", "grpc_extra_deps")
-grpc_extra_deps()
+pip_install(
+    name = "rules_proto_grpc_py3_deps",
+    python_interpreter = "python3",
+    requirements = "@rules_proto_grpc//python:requirements.txt",
+)
 
 http_archive(
     name = "io_bazel_rules_k8s",

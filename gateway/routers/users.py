@@ -2,7 +2,7 @@ import logging
 from typing import Optional
 from uuid import UUID
 
-import grpc
+import grpclib
 from fastapi import APIRouter, Depends, Body, HTTPException
 
 from gateway.dependencies.auth import authorized
@@ -19,7 +19,7 @@ async def get_users(role: Optional[RoleEnum] = None, name: Optional[str] = None,
                     sessions: SessionsContext = Depends()):
     try:
         return await sessions.find_users(role=role, name=name, limit=page_flags.limit, offset=page_flags.offset)
-    except grpc.RpcError as e:
+    except grpclib.GRPCError as e:
         logging.error(e)
         raise HTTPException(status_code=500)
 
@@ -31,7 +31,7 @@ async def get_user_by_id(id: UUID, sessions: SessionsContext = Depends()):
         if not user:
             raise HTTPException(status_code=404)
         return user
-    except grpc.RpcError as e:
+    except grpclib.GRPCError as e:
         logging.error(e)
         raise HTTPException(status_code=500)
 
@@ -44,7 +44,7 @@ async def create_user(user_create: UserCreate,
         if creator["role"] != RoleEnum.admin:
             raise HTTPException(status_code=403)
         return await sessions.create_user(user_create)
-    except grpc.RpcError as e:
+    except grpclib.GRPCError as e:
         logging.error(e)
         raise HTTPException(status_code=500)
 
@@ -54,8 +54,8 @@ async def auth(login: str = Body(...), password: str = Body(...),
                sessions: SessionsContext = Depends()):
     try:
         return await sessions.authorize(login, password)
-    except grpc.RpcError as e:
-        if grpc.StatusCode.UNAUTHENTICATED == e.code():
+    except grpclib.GRPCError as e:
+        if e.status == grpclib.Status.UNAUTHENTICATED:
             raise HTTPException(status_code=401, detail="Incorrect login or password")
         else:
             logging.error(e)

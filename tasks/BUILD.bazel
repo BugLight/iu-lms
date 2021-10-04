@@ -27,8 +27,7 @@ py_library(
         requirement("pg8000"),
         requirement("grpcio-health-checking"),
         requirement("python-dotenv"),
-        "//tasks/proto:tasks_py_pb2",
-        "//tasks/proto:tasks_py_pb2_grpc",
+        "//tasks/proto:tasks_py_grpc",
     ]
 )
 

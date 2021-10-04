@@ -37,12 +37,9 @@ py_library(
         requirement("pyjwt"),
         requirement("email-validator"),
         requirement("python-dotenv"),
-        "//sessions/proto:sessions_py_pb2",
-        "//sessions/proto:sessions_py_pb2_grpc",
-        "//courses/proto:courses_py_pb2",
-        "//courses/proto:courses_py_pb2_grpc",
-        "//tasks/proto:tasks_py_pb2",
-        "//tasks/proto:tasks_py_pb2_grpc",
+        "//sessions/proto:sessions_py_grpc",
+        "//courses/proto:courses_py_grpc",
+        "//tasks/proto:tasks_py_grpc",
     ],
 )
 

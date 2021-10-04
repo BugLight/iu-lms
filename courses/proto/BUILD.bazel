@@ -1,7 +1,7 @@
 package(default_visibility = ["//visibility:public"])
 
 load("@rules_proto//proto:defs.bzl", "proto_library")
-load("@com_github_grpc_grpc//bazel:python_rules.bzl", "py_proto_library", "py_grpc_library")
+load("@rules_proto_grpc//python:defs.bzl", "python_grpclib_library")
 
 proto_library(
     name = "proto",
@@ -10,19 +10,11 @@ proto_library(
     ],
 )
 
-py_proto_library(
-    name = "courses_py_pb2",
-    deps = [
+python_grpclib_library(
+    name = "courses_py_grpc",
+    protos = [
         ":proto",
     ],
-)
-
-py_grpc_library(
-    name = "courses_py_pb2_grpc",
-    srcs = [
-        ":proto",
-    ],
-    deps = [
-        ":courses_py_pb2",
-    ],
+    output_mode = "NO_PREFIX",
+    prefix_path = "../..",
 )

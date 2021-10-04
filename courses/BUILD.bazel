@@ -20,9 +20,7 @@ py_library(
         requirement("SQLAlchemy"),
         requirement("pg8000"),
         requirement("python-dotenv"),
-        requirement("grpcio-health-checking"),
-        "//courses/proto:courses_py_pb2",
-        "//courses/proto:courses_py_pb2_grpc",
+        "//courses/proto:courses_py_grpc",
     ]
 )
 
