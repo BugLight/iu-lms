@@ -1,6 +1,6 @@
 import logging
 import uuid
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 from email.mime.text import MIMEText
 from smtplib import SMTPException
 
@@ -54,7 +54,7 @@ class SessionsService(SessionsBase):
                 user = User(name=request.name,
                             email=request.email,
                             role=request.role,
-                            birth_date=request.birth_date if request.birth_date else None,
+                            birth_date=date.fromisoformat(request.birth_date) if request.birth_date else None,
                             password=hash_password(password))
                 session.add(user)
                 session.flush()
