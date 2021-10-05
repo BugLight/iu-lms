@@ -14,7 +14,7 @@ from gateway.schemas.user import User, UserCreate, RoleEnum
 router = APIRouter(prefix="/users", tags=["users"])
 
 
-@router.get("/", response_model=Page[User], dependencies=[Depends(authorized)])
+@router.get("", response_model=Page[User], dependencies=[Depends(authorized)])
 async def get_users(role: Optional[RoleEnum] = None, name: Optional[str] = None, page_flags: PageFlags = Depends(),
                     sessions: SessionsContext = Depends()):
     try:
@@ -36,7 +36,7 @@ async def get_user_by_id(id: UUID, sessions: SessionsContext = Depends()):
         raise HTTPException(status_code=500)
 
 
-@router.post("/", response_model=User, status_code=201)
+@router.post("", response_model=User, status_code=201)
 async def create_user(user_create: UserCreate,
                       sessions: SessionsContext = Depends(),
                       creator=Depends(authorized)):

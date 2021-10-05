@@ -19,7 +19,7 @@ from gateway.schemas.user import RoleEnum
 router = APIRouter(prefix="/tasks", tags=["tasks"])
 
 
-@router.get("/", response_model=Page[Task])
+@router.get("", response_model=Page[Task])
 async def get_tasks(course_id: Optional[UUID] = None,
                     tasks: TasksContext = Depends(),
                     user=Depends(authorized),
@@ -48,7 +48,7 @@ async def get_task_by_id(id: UUID, tasks: TasksContext = Depends()):
         raise HTTPException(status_code=500)
 
 
-@router.post("/", response_model=Task, status_code=201)
+@router.post("", response_model=Task, status_code=201)
 async def create_task(task_create: TaskCreate,
                       tasks: TasksContext = Depends(),
                       user=Depends(authorized)):

@@ -28,7 +28,7 @@ async def get_course_by_id(id: UUID, courses: CoursesContext = Depends()):
         raise HTTPException(status_code=500)
 
 
-@router.get("/", response_model=Page[Course])
+@router.get("", response_model=Page[Course])
 async def get_courses(name: Optional[str] = None, author_id: Optional[str] = None,
                       courses: CoursesContext = Depends(),
                       user=Depends(authorized),
@@ -45,7 +45,7 @@ async def get_courses(name: Optional[str] = None, author_id: Optional[str] = Non
         raise HTTPException(status_code=500)
 
 
-@router.post("/", response_model=Course, status_code=201)
+@router.post("", response_model=Course, status_code=201)
 async def create_course(course_create: CourseCreate,
                         courses: CoursesContext = Depends(),
                         user=Depends(authorized)):
