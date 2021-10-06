@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from gateway.routers import (
     courses,
     users,
+    reports,
     tasks
 )
 
@@ -24,6 +25,7 @@ app.add_middleware(
 app.include_router(courses.router)
 app.include_router(users.router)
 app.include_router(tasks.router)
+app.include_router(reports.router)
 
 
 @app.get("/health")

@@ -21,6 +21,7 @@ py_library(
         "dependencies/auth.py",
         "routers/__init__.py",
         "routers/courses.py",
+        "routers/reports.py",
         "routers/tasks.py",
         "routers/users.py",
         "schemas/__init__.py",
@@ -30,7 +31,9 @@ py_library(
         "schemas/page.py",
         "schemas/review.py",
         "schemas/task.py",
-        "schemas/user.py"
+        "schemas/user.py",
+        "schemas/reports/__init__.py",
+        "schemas/reports/academic_performance.py",
     ],
     deps = [
         requirement("fastapi"),
